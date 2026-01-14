@@ -1,0 +1,10 @@
+{
+    "name": "VyinChatSdk.Editor",
+    "references": [
+      "VyinChatSdk"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": []
+}

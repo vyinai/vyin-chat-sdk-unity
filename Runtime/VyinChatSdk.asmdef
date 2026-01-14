@@ -1,0 +1,11 @@
+{
+    "name": "VyinChatSdk",
+    "references": [
+        "UnityEngine.CoreModule",
+        "UnityEngine.AndroidJNIModule",
+        "Newtonsoft.Json-for-Unity",
+        "endel.nativewebsocket"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": []
+}
