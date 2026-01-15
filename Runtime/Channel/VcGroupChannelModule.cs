@@ -1,14 +1,9 @@
 using System;
 using System.Threading.Tasks;
-using UnityEngine;
+using VyinChatSdk.Internal.Domain.UseCases;
 using VyinChatSdk.Internal.Platform;
 using VyinChatSdk.Internal.Platform.Unity;
-using VyinChatSdk.Internal.Domain.UseCases;
 using Logger = VyinChatSdk.Internal.Domain.Log.Logger;
-
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 namespace VyinChatSdk
 {
@@ -32,7 +27,7 @@ namespace VyinChatSdk
         }
 
         /// <summary>
-        /// Retrieves a group channel by its URL using callback pattern (legacy).
+        /// Retrieves a group channel by its URL using callback pattern.
         /// </summary>
         /// <param name="channelUrl">The unique URL of the channel to retrieve</param>
         /// <param name="callback">Callback invoked with the channel or error message</param>
@@ -46,45 +41,11 @@ namespace VyinChatSdk
                 return;
             }
 
-#if UNITY_EDITOR
-            // Unity Editor: Use Pure C# implementation
             _ = ExecuteAsyncWithCallback(
                 () => GetGroupChannelAsync(channelUrl),
                 callback,
                 "GetGroupChannel"
             );
-#else
-            // Runtime: Check if platform supports GetChannel
-            if (Application.platform == RuntimePlatform.Android)
-            {
-                // Android: Not yet implemented, use Pure C# fallback
-                Logger.Warning(TAG, "Android GetChannel not implemented, using Pure C# implementation");
-                _ = ExecuteAsyncWithCallback(
-                    () => GetGroupChannelAsync(channelUrl),
-                    callback,
-                    "GetGroupChannel"
-                );
-            }
-            else if (Application.platform == RuntimePlatform.IPhonePlayer)
-            {
-                // iOS: Not yet implemented, use Pure C# fallback
-                Logger.Warning(TAG, "iOS GetChannel not implemented, using Pure C# implementation");
-                _ = ExecuteAsyncWithCallback(
-                    () => GetGroupChannelAsync(channelUrl),
-                    callback,
-                    "GetGroupChannel"
-                );
-            }
-            else
-            {
-                // Fallback to Pure C# for other platforms
-                _ = ExecuteAsyncWithCallback(
-                    () => GetGroupChannelAsync(channelUrl),
-                    callback,
-                    "GetGroupChannel"
-                );
-            }
-#endif
         }
 
         #endregion
@@ -105,7 +66,7 @@ namespace VyinChatSdk
         }
 
         /// <summary>
-        /// Creates a new group channel using callback pattern (legacy).
+        /// Creates a new group channel using callback pattern.
         /// </summary>
         /// <param name="createParams">Parameters for creating the channel</param>
         /// <param name="callback">Callback invoked with the created channel or error message</param>
@@ -119,55 +80,11 @@ namespace VyinChatSdk
                 return;
             }
 
-#if UNITY_EDITOR
-            // Unity Editor: Use Pure C# implementation
             _ = ExecuteAsyncWithCallback(
                 () => CreateGroupChannelAsync(createParams),
                 callback,
                 "CreateGroupChannel"
             );
-#else
-            // Runtime: Use platform-specific implementations
-            if (Application.platform == RuntimePlatform.Android)
-            {
-                try
-                {
-                    AndroidJavaClass androidBridge = new AndroidJavaClass("com.gamania.gim.unitybridge.UnityBridge");
-                    AndroidJavaObject paramsObj = createParams.ToAndroidJavaObject();
-                    var proxy = new GroupChannelCallbackProxy(callback);
-                    androidBridge.CallStatic("createChannel", paramsObj, proxy);
-                }
-                catch (Exception e)
-                {
-                    callback?.Invoke(null, e.Message);
-                }
-            }
-            else if (Application.platform == RuntimePlatform.IPhonePlayer)
-            {
-#if UNITY_IOS
-                try
-                {
-                    Internal.ChatSDKWrapper.CreateGroupChannel(createParams, callback);
-                }
-                catch (Exception e)
-                {
-                    Logger.Error(TAG, "Error calling iOS CreateGroupChannel: " + e, e);
-                    callback?.Invoke(null, e.Message);
-                }
-#else
-                callback?.Invoke(null, "iOS SDK not available in this build");
-#endif
-            }
-            else
-            {
-                // Fallback to Pure C# for other platforms
-                _ = ExecuteAsyncWithCallback(
-                    () => CreateGroupChannelAsync(createParams),
-                    callback,
-                    "CreateGroupChannel"
-                );
-            }
-#endif
         }
 
         #endregion
@@ -253,34 +170,5 @@ namespace VyinChatSdk
         }
 
         #endregion
-
-        private class GroupChannelCallbackProxy : AndroidJavaProxy
-        {
-            private readonly VcGroupChannelCallbackHandler callback;
-            public GroupChannelCallbackProxy(VcGroupChannelCallbackHandler callback)
-                : base("com.gamania.gim.sdk.handler.GroupChannelCallbackHandler")
-            {
-                this.callback = callback;
-            }
-
-            void onResult(AndroidJavaObject channel, AndroidJavaObject exception)
-            {
-                Logger.Debug(TAG, "onResult: channel=" + channel + ", error=" + exception);
-                var error = exception.GetErrorMessage();
-                var groupChannel = !string.IsNullOrEmpty(error) ? null : channel.ToVcGroupChannel();
-
-                MainThreadDispatcher.Enqueue(() =>
-                {
-                    if (!string.IsNullOrEmpty(error))
-                    {
-                        callback?.Invoke(null, error);
-                        Logger.Error(TAG, "onResult: error=" + error);
-                        return;
-                    }
-                    Logger.Debug(TAG, "onResult: groupChannel=" + groupChannel);
-                    callback.Invoke(groupChannel, null);
-                });
-            }
-        }
     }
 }

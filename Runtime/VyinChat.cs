@@ -6,11 +6,7 @@
 
 using System;
 using UnityEngine;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
-using VyinChatSdk.Internal;
 using VyinChatSdk.Internal.Platform.Unity;
 using Logger = VyinChatSdk.Internal.Domain.Log.Logger;
 
@@ -19,29 +15,14 @@ namespace VyinChatSdk
     public static class VyinChat
     {
         private const string TAG = "VyinChat";
-        private static readonly IVyinChat vyinChatImpl;
+        private static readonly VyinChatMain vyinChatImpl;
 
         static VyinChat()
         {
             Logger.SetInstance(UnityLoggerImpl.Instance);
 
-#if UNITY_EDITOR
-            // Unity Editor uses Pure C# implementation to connect to real server
+            // All platforms now use Pure C# implementation
             vyinChatImpl = VyinChatMain.Instance;
-#else
-            switch (Application.platform)
-            {
-                case RuntimePlatform.Android:
-                    vyinChatImpl = new VyinChatAndroid();
-                    break;
-                case RuntimePlatform.IPhonePlayer:
-                    vyinChatImpl = new VyinChatIOS();
-                    break;
-                default:
-                    vyinChatImpl = VyinChatMain.Instance;
-                    break;
-            }
-#endif
         }
 
         private static VcInitParams _initParams;
@@ -128,18 +109,32 @@ namespace VyinChatSdk
             }
         }
 
+        /// <summary>
+        /// Connect to VyinChat server with user ID only.
+        /// </summary>
+        /// <param name="userId">User ID</param>
+        /// <param name="callback">Callback with user or error</param>
+        public static void Connect(string userId, VcUserHandler callback)
+        {
+            Connect(userId, null, null, null, callback);
+        }
+
+        /// <summary>
+        /// Connect to VyinChat server with user ID and auth token.
+        /// </summary>
+        /// <param name="userId">User ID</param>
+        /// <param name="authToken">Auth token (pass null if not needed)</param>
+        /// <param name="callback">Callback with user or error</param>
         public static void Connect(string userId, string authToken, VcUserHandler callback)
         {
             Connect(userId, authToken, null, null, callback);
         }
 
         /// <summary>
-        /// Connect with explicit API and WebSocket hosts
-        /// Pure C# implementation: Uses provided hosts for HTTP and WebSocket connections
-        /// Legacy implementations: Use SetConfiguration() before calling Connect with null hosts
+        /// Connect to VyinChat server with user ID, auth token, and custom hosts.
         /// </summary>
         /// <param name="userId">User ID</param>
-        /// <param name="authToken">Optional auth token</param>
+        /// <param name="authToken">Auth token (pass null if not needed)</param>
         /// <param name="apiHost">API host URL (e.g., "https://api.gamania.chat"), null for default</param>
         /// <param name="wsHost">WebSocket host URL (e.g., "wss://ws.gamania.chat"), null for default</param>
         /// <param name="callback">Callback with user or error</param>
@@ -149,100 +144,41 @@ namespace VyinChatSdk
         }
 
         /// <summary>
-        /// Set custom configuration for ChatSDK
-        /// Call this BEFORE Init() to override default settings
-        ///
-        /// TODO: This method will be removed in the future.
-        /// Only iOS platform supports this. Editor and other platforms will show warnings.
+        /// Set custom configuration for ChatSDK.
+        /// This method is deprecated. Use Connect() with explicit apiHost and wsHost parameters instead.
         /// </summary>
         /// <param name="appId">Application ID (optional, pass null to keep current)</param>
-        /// <param name="domain">Environment domain (e.g., "dev.gim.beango.com", "stg.gim.beango.com", "gamania.chat")</param>
+        /// <param name="domain">Environment domain</param>
+        [Obsolete("SetConfiguration is deprecated. Use Connect(userId, authToken, apiHost, wsHost, callback) with explicit host URLs instead.")]
         public static void SetConfiguration(string appId, string domain)
         {
-#if UNITY_EDITOR
-            // Unity Editor uses Pure C# implementation which doesn't support SetConfiguration yet
-            Logger.Warning(TAG, "Editor mode (Pure C#) does not support SetConfiguration. " +
-                "Please use Init() with appropriate parameters or set configuration before static constructor.");
-#else
-            if (Application.platform == RuntimePlatform.Android)
-            {
-                // TODO: Android implementation not yet available
-                Logger.Warning(TAG, "SetConfiguration not implemented on Android yet");
-            }
-            else if (Application.platform == RuntimePlatform.IPhonePlayer)
-            {
-                 Internal.ChatSDKWrapper.SetConfiguration(appId, domain);
-            }
-            else
-            {
-                // Other platforms use Pure C# implementation
-                Logger.Warning(TAG, "Pure C# implementation does not support SetConfiguration. " +
-                    "Please use Init() with appropriate parameters.");
-            }
-#endif
+            Logger.Warning(TAG, "SetConfiguration is deprecated. " +
+                "Use Connect(userId, authToken, apiHost, wsHost, callback) with explicit host URLs instead.");
         }
 
         /// <summary>
-        /// Reset configuration to default values (PROD environment)
-        /// iOS only for now
+        /// Reset configuration to default values.
+        /// This method is deprecated. Configuration is now handled via Init() and Connect() parameters.
         /// </summary>
+        [Obsolete("ResetConfiguration is deprecated. Configuration is now handled via Init() and Connect() parameters.")]
         public static void ResetConfiguration()
         {
-#if UNITY_EDITOR
-            Logger.Debug(TAG, "Simulate ResetConfiguration in Editor");
-#else
-            if (Application.platform == RuntimePlatform.Android)
-            {
-                // TODO: Android implementation not yet available
-                Logger.Warning(TAG, "ResetConfiguration not implemented on Android yet");
-            }
-            else if (Application.platform == RuntimePlatform.IPhonePlayer)
-            {
-                try
-                {
-                    Internal.ChatSDKWrapper.ResetConfiguration();
-                }
-                catch (System.Exception e)
-                {
-                    Logger.Error(TAG, "Error calling iOS ResetConfiguration: " + e, e);
-                }
-            }
-#endif
+            Logger.Warning(TAG, "ResetConfiguration is deprecated. " +
+                "Configuration is now handled via Init() and Connect() parameters.");
         }
 
-        // TODO: replace with platform implementation
+        /// <summary>
+        /// Invite users to a channel.
+        /// This method is not yet implemented in pure C#. Will be available in a future release.
+        /// </summary>
+        /// <param name="channelUrl">Channel URL</param>
+        /// <param name="userIds">Array of user IDs to invite</param>
+        /// <param name="callback">Callback with result or error</param>
+        [Obsolete("InviteUsers is not yet implemented in pure C#. Will be available in a future release.")]
         public static void InviteUsers(string channelUrl, string[] userIds, Action<string, string> callback)
         {
-            TryExecute(() =>
-            {
-#if UNITY_EDITOR
-                SimulateEditorCall(() =>
-                {
-                    string fakeResult = $"{{\"success\":true,\"channelUrl\":\"{channelUrl}\"}}";
-                    callback?.Invoke(fakeResult, null);
-                });
-#else
-                if (Application.platform == RuntimePlatform.Android)
-                {
-                    // TODO: Android implementation not yet available
-                    // Please implement SendMessage in Android UnityBridge
-                    Logger.Warning(TAG, "SendMessage not implemented on Android yet");
-                    callback?.Invoke(null, "Not implemented on Android");
-                }
-                else if (Application.platform == RuntimePlatform.IPhonePlayer)
-                {
-                    try
-                    {
-                        Internal.ChatSDKWrapper.InviteUsers(channelUrl, userIds, callback);
-                    }
-                    catch (System.Exception e)
-                    {
-                        Logger.Error(TAG, "Error calling iOS InviteUsers: " + e, e);
-                        callback?.Invoke(null, e.Message);
-                    }
-                }
-#endif
-            }, "InviteUsers");
+            Logger.Warning(TAG, "InviteUsers is not yet implemented in pure C#.");
+            callback?.Invoke(null, "InviteUsers is not yet implemented. Will be available in a future release.");
         }
 
         /// <summary>
@@ -277,23 +213,6 @@ namespace VyinChatSdk
             }
         }
 
-#if UNITY_EDITOR
-        private static void SimulateEditorCall(Action editorAction)
-        {
-            EditorApplication.delayCall += () =>
-            {
-                try
-                {
-                    editorAction.Invoke();
-                }
-                catch (Exception e)
-                {
-                    Logger.Error(TAG, "[Editor Simulate] " + e.Message, e);
-                }
-            };
-        }
-#endif
-
         #endregion
 
 #if UNITY_EDITOR || UNITY_INCLUDE_TESTS
@@ -311,10 +230,7 @@ namespace VyinChatSdk
             Logger.SetInstance(UnityLoggerImpl.Instance);
 
             // Reset the implementation instance state
-            if (vyinChatImpl is VyinChatMain vyinChatMain)
-            {
-                vyinChatMain.Reset();
-            }
+            vyinChatImpl.Reset();
         }
 #endif
     }

@@ -8,7 +8,7 @@ using VyinChatSdk.Internal.Platform.Unity.Network;
 
 namespace VyinChatSdk.Internal.Platform.Unity
 {
-    internal class VyinChatMain : IVyinChat
+    internal class VyinChatMain
     {
         private static VyinChatMain _instance;
         private IHttpClient _httpClient;

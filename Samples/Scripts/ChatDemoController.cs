@@ -55,15 +55,12 @@ public class ChatDemoController : MonoBehaviour
         try
         {
             // 根據環境設定配置
+            AppendLogText($"[ChatDemo] Environment: {environment}");
             string domain = GetDomainForEnvironment(environment);
             string actualAppId = GetAppIdForEnvironment(environment, appId);
-            AppendLogText($"[ChatDemo] Environment: {environment}");
             AppendLogText($"[ChatDemo] Domain: {domain}");
             AppendLogText($"[ChatDemo] AppId: {actualAppId}");
             AppendLogText("──────────────────────────────");
-            // Legacy implementations use VyinChat.SetConfiguration
-            // Pure C# implementation uses Connect with explicit hosts
-            VyinChat.SetConfiguration(actualAppId, domain);
 
             // 初始化 VyinChat SDK
             AppendLogText("[ChatDemo] Initializing VyinChat...");
@@ -171,18 +168,18 @@ public class ChatDemoController : MonoBehaviour
             currentChannelUrl = channel.ChannelUrl;
             AppendLogText($"[ChatDemo] Channel created: '{channel.Name}', ChannelUrl: '{currentChannelUrl}'");
 
-            // VcGroupChannelModule.GetGroupChannel(currentChannelUrl, (retrievedChannel, getError) =>
-            // {
-            //     if (!string.IsNullOrEmpty(getError))
-            //     {
-            //         AppendLogText($"[ChatDemo] GetChannel failed: {getError}");
-            //         return;
-            //     }
+            VcGroupChannelModule.GetGroupChannel(currentChannelUrl, (retrievedChannel, getError) =>
+            {
+                if (!string.IsNullOrEmpty(getError))
+                {
+                    AppendLogText($"[ChatDemo] GetChannel failed: {getError}");
+                    return;
+                }
 
-            //     AppendLogText($"[ChatDemo] GetChannel success!");
-            //     AppendLogText($"  - Channel URL: {retrievedChannel.ChannelUrl}");
-            //     AppendLogText($"  - Name: {retrievedChannel.Name}");
-            //     AppendLogText($"  - Members: {retrievedChannel.MemberCount}");
+                AppendLogText($"[ChatDemo] GetChannel success!");
+                AppendLogText($"  - Channel URL: {retrievedChannel.ChannelUrl}");
+                AppendLogText($"  - Name: {retrievedChannel.Name}");
+                AppendLogText($"  - Members: {retrievedChannel.MemberCount}");
                 AppendLogText("──────────────────────────────");
                 AppendLogText("AI ChatBot connected!");
                 AppendLogText("Please enter a message above to start chatting.");
@@ -192,7 +189,7 @@ public class ChatDemoController : MonoBehaviour
                 {
                     SendTestMessage(currentChannelUrl);
                 }
-            // });
+            });
         }
 
         VcGroupChannelModule.CreateGroupChannel(channelCreateParams, channelCreateCallback);

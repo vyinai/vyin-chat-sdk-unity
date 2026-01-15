@@ -1,4 +1,0 @@
-framework module ChatSDK {
-  header "ChatSDK-Swift.h"
-  requires objc
-}
