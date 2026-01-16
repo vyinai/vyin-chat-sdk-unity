@@ -1,5 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using VyinChatSdk.Internal.Data.Repositories;
+using VyinChatSdk.Internal.Domain.UseCases;
+using VyinChatSdk.Internal.Platform;
+using VyinChatSdk.Internal.Platform.Unity;
 using Logger = VyinChatSdk.Internal.Domain.Log.Logger;
 
 namespace VyinChatSdk
@@ -18,6 +23,70 @@ namespace VyinChatSdk
         public string CoverUrl { get; set; }
         public string CustomType { get; set; }
 
+        public void SendUserMessage(
+           VcUserMessageCreateParams createParams,
+           VcUserMessageHandler callback)
+        {
+            if (callback == null)
+            {
+                Logger.Warning(TAG, "SendUserMessage: callback is null");
+                return;
+            }
+
+            _ = ExecuteAsyncWithCallback(
+                () => SendUserMessageAsync(createParams),
+                callback,
+                "SendUserMessage"
+            );
+        }
+
+        public static async Task ExecuteAsyncWithCallback(
+            Func<Task<VcBaseMessage>> asyncOperation,
+            VcUserMessageHandler callback,
+            string operationName)
+        {
+            try
+            {
+                var channel = await asyncOperation();
+                MainThreadDispatcher.Enqueue(() =>
+                {
+                    callback?.Invoke(channel, null);
+                });
+            }
+            catch (VcException vcEx)
+            {
+                Logger.Error(TAG, $"{operationName} failed: {vcEx.Message}", vcEx);
+                MainThreadDispatcher.Enqueue(() =>
+                {
+                    callback?.Invoke(null, vcEx.Message);
+                });
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(TAG, $"{operationName} error: {ex.Message}", ex);
+                var errorMessage = $"Unexpected error: {ex.Message}";
+                MainThreadDispatcher.Enqueue(() =>
+                {
+                    callback?.Invoke(null, errorMessage);
+                });
+            }
+        }
+
+        /// <summary>
+        /// Sends a user message to this group channel.
+        /// </summary>
+        /// <param name="createParams">Parameters for creating the user message. The ChannelUrl property will be overwritten by this channel's URL.</param>
+        /// <param name="callback">Callback with the sent message or an error.</param>
+        /// <returns>A temporary message instance. The actual message details are delivered via the callback.</returns>
+        public async Task<VcBaseMessage> SendUserMessageAsync(VcUserMessageCreateParams createParams)
+        {
+            var webSocketClient = VyinChatMain.Instance.GetWebSocketClient();
+            var repository = new MessageRepositoryImpl(webSocketClient);
+            var useCase = new SendMessageUseCase(repository);
+            return await useCase.ExecuteAsync(ChannelUrl, createParams);
+        }
+
+        #region Channel Event Handlers
 
         private static readonly Dictionary<string, VcGroupChannelHandler> _handlers = new();
 
@@ -97,5 +166,7 @@ namespace VyinChatSdk
                 }
             }
         }
+
+        #endregion
     }
 }

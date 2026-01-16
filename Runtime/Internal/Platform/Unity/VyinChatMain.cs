@@ -31,6 +31,12 @@ namespace VyinChatSdk.Internal.Platform.Unity
             }
         }
 
+        public bool IsInitialized => _initParams != null;
+        public string AppId => _initParams?.AppId;
+        public string AppVersion => _initParams?.AppVersion;
+        public VcLogLevel LogLevel => _initParams?.LogLevel ?? VcLogLevel.None;
+        public bool UseLocalCaching => _initParams?.IsLocalCachingEnabled ?? false;
+
         public VyinChatMain()
         {
             _httpClient = new UnityHttpClient();
@@ -47,6 +53,13 @@ namespace VyinChatSdk.Internal.Platform.Unity
             if (string.IsNullOrEmpty(initParams.AppId))
             {
                 throw new ArgumentException("AppId cannot be null or empty", nameof(initParams));
+            }
+
+            if (IsInitialized && AppId != initParams.AppId)
+            {
+                throw new ArgumentException(
+                    $"AppId must match previous initialization. Previous: {AppId}, New: {initParams.AppId}",
+                    nameof(initParams));
             }
 
             _initParams = initParams;
@@ -173,11 +186,22 @@ namespace VyinChatSdk.Internal.Platform.Unity
         }
 
         /// <summary>
-        /// Get HTTP Client instance
+        /// Get WebSocket Client instance
         /// </summary>
-        public IHttpClient GetHttpClient()
+        public IWebSocketClient GetWebSocketClient()
         {
-            return _httpClient;
+            EnsureInitialized();
+            return _webSocketClient;
+        }
+
+        /// <summary>
+        /// Check if connected to server (has valid session key)
+        /// </summary>
+        public bool IsConnected()
+        {
+            return _webSocketClient != null &&
+                   _webSocketClient.IsConnected &&
+                   !string.IsNullOrEmpty(_webSocketClient.SessionKey);
         }
 
         private void EnsureInitialized()
@@ -188,163 +212,6 @@ namespace VyinChatSdk.Internal.Platform.Unity
                     VcErrorCode.InvalidInitialization,
                     "VyinChat SDK is not initialized. Call VyinChat.Init() first.");
             }
-        }
-
-        /// <summary>
-        /// Send a message to a channel
-        /// </summary>
-        /// <param name="channelUrl">Channel URL</param>
-        /// <param name="message">Message text</param>
-        /// <param name="callback">Callback with sent message or error</param>
-        public void SendMessage(string channelUrl, string message, VcUserMessageHandler callback)
-        {
-            Logger.Debug(LogCategory.Message, $"SendMessage called for channel: {channelUrl}");
-
-            // Check if connected (has session key)
-            if (_webSocketClient == null || !_webSocketClient.IsConnected || string.IsNullOrEmpty(_webSocketClient.SessionKey))
-            {
-                var errorMsg = "Cannot send message: Not connected (no session key).";
-                Logger.Error(LogCategory.Message, errorMsg);
-                throw new InvalidOperationException(errorMsg);
-            }
-
-            // Validate channelUrl
-            if (string.IsNullOrEmpty(channelUrl))
-            {
-                var errorMsg = "channelUrl is empty.";
-                Logger.Error(LogCategory.Message, errorMsg);
-                callback?.Invoke(null, errorMsg);
-                return;
-            }
-
-            // Validate message
-            if (string.IsNullOrEmpty(message))
-            {
-                var errorMsg = "message is empty.";
-                Logger.Error(LogCategory.Message, errorMsg);
-                callback?.Invoke(null, errorMsg);
-                return;
-            }
-
-            SendMessageInternal(channelUrl, message, callback);
-        }
-
-        private async void SendMessageInternal(string channelUrl, string message, VcUserMessageHandler callback)
-        {
-            try
-            {
-                // Build MESG command payload
-                var payload = new
-                {
-                    channel_url = channelUrl,
-                    message = message,
-                    message_type = "MESG",
-                    data = "",
-                    custom_type = ""
-                };
-
-                Logger.Debug(LogCategory.Command, $"Sending MESG command for channel: {channelUrl}");
-
-                // Send command and wait for ACK (15 second timeout)
-                var ackTimeout = TimeSpan.FromSeconds(15);
-                string ackPayload = await _webSocketClient.SendCommandAsync(
-                    Domain.Commands.CommandType.MESG,
-                    payload,
-                    ackTimeout
-                );
-
-                // Check for null/empty ackPayload (timeout or error)
-                if (string.IsNullOrEmpty(ackPayload))
-                {
-                    Logger.Error(LogCategory.Command, "SendMessage timeout or empty ACK");
-                    callback?.Invoke(null, "Message send timeout after 15 seconds");
-                    return;
-                }
-
-                Logger.Debug(LogCategory.Command, $"MESG ACK received: {ackPayload}");
-
-                // Parse ACK response to get message details
-                var sentMessage = ParseMessageFromAck(ackPayload, channelUrl, message);
-
-                // Invoke success callback
-                callback?.Invoke(sentMessage, null);
-            }
-            catch (TaskCanceledException)
-            {
-                Logger.Error(LogCategory.Message, "SendMessage timeout after 15 seconds");
-                callback?.Invoke(null, "Message send timeout after 15 seconds");
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(LogCategory.Message, $"SendMessage error: {ex.Message}", ex);
-                callback?.Invoke(null, ex.Message);
-            }
-        }
-
-        private VcBaseMessage ParseMessageFromAck(string ackPayload, string channelUrl, string messageText)
-        {
-            try
-            {
-                // Parse the actual ACK response to get the server-assigned message ID and timestamp
-                // The ACK payload is the JSON part of the MESG command
-                
-                var message = new VcBaseMessage
-                {
-                    ChannelUrl = channelUrl,
-                    Message = messageText
-                };
-
-                // Try to extract message ID (Server may use "msg_id" or "message_id")
-                string messageIdRaw = ExtractValue(ackPayload, "msg_id");
-                if (string.IsNullOrEmpty(messageIdRaw))
-                {
-                    messageIdRaw = ExtractValue(ackPayload, "message_id");
-                }
-
-                if (long.TryParse(messageIdRaw, out long messageId))
-                {
-                    message.MessageId = messageId;
-                }
-
-                // Extract timestamp
-                string timestampRaw = ExtractValue(ackPayload, "ts");
-                if (long.TryParse(timestampRaw, out long timestamp))
-                {
-                    message.CreatedAt = timestamp;
-                }
-                else
-                {
-                    message.CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-                }
-
-                // Extract sender info from "user" object if needed
-                // For now, these are the essentials to prevent UI replacement
-                return message;
-            }
-            catch (Exception ex)
-            {
-                Logger.Warning(LogCategory.Message, $"Failed to parse ACK payload: {ex.Message}. Falling back to basic message.");
-                return new VcBaseMessage
-                {
-                    ChannelUrl = channelUrl,
-                    Message = messageText,
-                    CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-                };
-            }
-        }
-
-        private string ExtractValue(string json, string key)
-        {
-            var pattern = $"\"{key}\":";
-            var start = json.IndexOf(pattern, StringComparison.Ordinal);
-            if (start < 0) return null;
-            start += pattern.Length;
-            
-            // Basic extraction for numbers or strings
-            var end = json.IndexOfAny(new[] { ',', '}', ']' }, start);
-            if (end < 0) end = json.Length;
-            var val = json.Substring(start, end - start).Trim().Trim('"');
-            return val;
         }
 
         /// <summary>

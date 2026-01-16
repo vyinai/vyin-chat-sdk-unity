@@ -1,7 +1,5 @@
 using NUnit.Framework;
 using System;
-using UnityEngine;
-using UnityEngine.TestTools;
 using VyinChatSdk;
 
 namespace VyinChatSdk.Tests.Editor
@@ -16,14 +14,12 @@ namespace VyinChatSdk.Tests.Editor
         [SetUp]
         public void SetUp()
         {
-            // Reset VyinChat and VyinChatMain instance before each test
             VyinChat.ResetForTesting();
         }
 
         [TearDown]
         public void TearDown()
         {
-            // Clean up after each test
             VyinChat.ResetForTesting();
         }
 
@@ -34,16 +30,12 @@ namespace VyinChatSdk.Tests.Editor
             var appId = "test-app-id";
             var initParams = new VcInitParams(appId);
 
-            // Expect log from VyinChatMain.Init
-            // Note: The second log "SDK initialized" is filtered because LogLevel is set to Warning
-            LogAssert.Expect(LogType.Log, $"[VyinChat] Initialized with AppId: {appId}, LocalCaching: False, LogLevel: Warning");
-
             // Act
-            var result = VyinChat.Init(initParams);
+            VyinChat.Init(initParams);
 
             // Assert
-            Assert.IsTrue(result, "Init should return true on success");
             Assert.AreEqual(appId, VyinChat.GetApplicationId(), "AppId should be set correctly");
+            Assert.IsTrue(VyinChat.IsInitialized, "VyinChat should be initialized");
         }
 
         [Test]
@@ -54,10 +46,9 @@ namespace VyinChatSdk.Tests.Editor
             var initParams = new VcInitParams(appId);
 
             // Act
-            var result = VyinChat.Init(initParams);
+            VyinChat.Init(initParams);
 
             // Assert
-            Assert.IsTrue(result, "Init should return true on success");
             Assert.IsTrue(VyinChat.IsInitialized, "VyinChat should be initialized");
         }
 
@@ -68,17 +59,15 @@ namespace VyinChatSdk.Tests.Editor
             var appId = "test-app-id";
             var initParams = new VcInitParams(appId);
 
-            // Act
-            var firstResult = VyinChat.Init(initParams);
-            var secondResult = VyinChat.Init(initParams);
+            // Act & Assert - should not throw
+            VyinChat.Init(initParams);
+            VyinChat.Init(initParams);
 
-            // Assert
-            Assert.IsTrue(firstResult, "First init should succeed");
-            Assert.IsTrue(secondResult, "Second init with same appId should succeed");
+            Assert.IsTrue(VyinChat.IsInitialized);
         }
 
         [Test]
-        public void Init_CalledTwice_WithDifferentAppId_ShouldReturnFalse()
+        public void Init_CalledTwice_WithDifferentAppId_ShouldThrow()
         {
             // Arrange
             var firstAppId = "first-app-id";
@@ -87,46 +76,31 @@ namespace VyinChatSdk.Tests.Editor
             var secondParams = new VcInitParams(secondAppId);
 
             // Act
-            var firstResult = VyinChat.Init(firstParams);
-
-            // Expect error log for second init with different appId
-            LogAssert.Expect(LogType.Error, $"[VyinChat] Init failed: App ID needs to be the same as the previous one. Previous: {firstAppId}, New: {secondAppId}");
-            var secondResult = VyinChat.Init(secondParams);
+            VyinChat.Init(firstParams);
 
             // Assert
-            Assert.IsTrue(firstResult, "First init should succeed");
-            Assert.IsFalse(secondResult, "Second init with different appId should fail");
+            var ex = Assert.Throws<ArgumentException>(() => VyinChat.Init(secondParams));
+            Assert.That(ex.Message, Does.Contain("must match previous initialization"));
             Assert.AreEqual(firstAppId, VyinChat.GetApplicationId(), "AppId should remain the first one");
         }
 
         [Test]
-        public void Init_WithNullParams_ShouldReturnFalse()
+        public void Init_WithNullParams_ShouldThrow()
         {
-            // Expect error log for null params
-            LogAssert.Expect(LogType.Error, "[VyinChat] Init failed: initParams is null");
-
-            // Act
-            var result = VyinChat.Init(null);
-
-            // Assert
-            Assert.IsFalse(result, "Init with null params should return false");
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => VyinChat.Init(null));
             Assert.IsFalse(VyinChat.IsInitialized, "VyinChat should not be initialized");
         }
 
         [Test]
-        public void Init_WithEmptyAppId_ShouldReturnFalse()
+        public void Init_WithEmptyAppId_ShouldThrow()
         {
             // Arrange
             var initParams = new VcInitParams("");
 
-            // Expect error log for empty appId
-            LogAssert.Expect(LogType.Error, "[VyinChat] Init failed: AppId is empty");
-
-            // Act
-            var result = VyinChat.Init(initParams);
-
-            // Assert
-            Assert.IsFalse(result, "Init with empty appId should return false");
+            // Act & Assert
+            var ex = Assert.Throws<ArgumentException>(() => VyinChat.Init(initParams));
+            Assert.That(ex.Message, Does.Contain("AppId"));
             Assert.IsFalse(VyinChat.IsInitialized, "VyinChat should not be initialized");
         }
 
@@ -135,16 +109,12 @@ namespace VyinChatSdk.Tests.Editor
         {
             // Arrange
             var appId = "test-app-id";
-            var initParams = new VcInitParams(
-                appId,
-                isLocalCachingEnabled: true
-            );
+            var initParams = new VcInitParams(appId, isLocalCachingEnabled: true);
 
             // Act
-            var result = VyinChat.Init(initParams);
+            VyinChat.Init(initParams);
 
             // Assert
-            Assert.IsTrue(result, "Init should succeed");
             Assert.IsTrue(VyinChat.UseLocalCaching, "Local caching should be enabled");
         }
 
@@ -154,16 +124,12 @@ namespace VyinChatSdk.Tests.Editor
             // Arrange
             var appId = "test-app-id";
             var logLevel = VcLogLevel.Debug;
-            var initParams = new VcInitParams(
-                appId,
-                logLevel: logLevel
-            );
+            var initParams = new VcInitParams(appId, logLevel: logLevel);
 
             // Act
-            var result = VyinChat.Init(initParams);
+            VyinChat.Init(initParams);
 
             // Assert
-            Assert.IsTrue(result, "Init should succeed");
             Assert.AreEqual(logLevel, VyinChat.GetLogLevel(), "Log level should be set correctly");
         }
 
@@ -173,17 +139,14 @@ namespace VyinChatSdk.Tests.Editor
             // Arrange
             var appId = "test-app-id";
             var appVersion = "1.2.3";
-            var initParams = new VcInitParams(
-                appId,
-                appVersion: appVersion
-            );
+            var initParams = new VcInitParams(appId, appVersion: appVersion);
 
             // Act
-            var result = VyinChat.Init(initParams);
+            VyinChat.Init(initParams);
 
             // Assert
-            Assert.IsTrue(result, "Init should succeed");
             Assert.AreEqual(appVersion, VyinChat.GetAppVersion(), "App version should be set correctly");
         }
+
     }
 }

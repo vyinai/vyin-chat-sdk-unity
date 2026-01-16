@@ -15,7 +15,7 @@ using VyinChatSdk;
 using VyinChatSdk.Internal.Platform;
 using VyinChatSdk.Internal.Platform.Unity.Network;
 
-namespace VyinChatSdk.Tests.Runtime.MessageHandler
+namespace VyinChatSdk.Tests.Runtime.Message
 {
     /// <summary>
     /// Tests for MessageHandler functionality
@@ -169,8 +169,9 @@ namespace VyinChatSdk.Tests.Runtime.MessageHandler
             Assert.AreEqual(123456789, receivedMessage.MessageId);
             Assert.AreEqual("Test message content", receivedMessage.Message);
             Assert.AreEqual(TEST_CHANNEL_URL, receivedMessage.ChannelUrl);
-            Assert.AreEqual("sender_001", receivedMessage.SenderId);
-            Assert.AreEqual("Test Sender", receivedMessage.SenderNickname);
+            Assert.IsNotNull(receivedMessage.Sender, "Sender should not be null");
+            Assert.AreEqual("sender_001", receivedMessage.Sender.UserId);
+            Assert.AreEqual("Test Sender", receivedMessage.Sender.Nickname);
             Assert.AreEqual(1234567890, receivedMessage.CreatedAt);
             Assert.IsTrue(receivedMessage.Done);
         }
@@ -462,8 +463,11 @@ namespace VyinChatSdk.Tests.Runtime.MessageHandler
                 MessageId = 123456,
                 Message = TEST_MESSAGE,
                 ChannelUrl = TEST_CHANNEL_URL,
-                SenderId = "test_sender",
-                SenderNickname = "Test Sender",
+                Sender = new VcSender
+                {
+                    UserId = "test_sender",
+                    Nickname = "Test Sender"
+                },
                 CreatedAt = System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
             };
         }
@@ -503,15 +507,22 @@ namespace VyinChatSdk.Tests.Runtime.MessageHandler
             long createdAt = 1234567890,
             bool done = true,
             string customType = null,
-            string data = null)
+            string data = null,
+            string role = null)
         {
             var json = $"MESG{{\"message_id\":{messageId}," +
                        $"\"message\":\"{message}\"," +
                        $"\"channel_url\":\"{channelUrl}\"," +
-                       $"\"user_id\":\"{userId}\"," +
-                       $"\"nickname\":\"{nickname}\"," +
-                       $"\"created_at\":{createdAt}," +
-                       $"\"done\":{done.ToString().ToLower()}";
+                       $"\"user\":{{\"user_id\":\"{userId}\",\"nickname\":\"{nickname}\"";
+
+            if (!string.IsNullOrEmpty(role))
+            {
+                json += $",\"role\":\"{role}\"";
+            }
+
+            json += $"}}," +
+                    $"\"created_at\":{createdAt}," +
+                    $"\"done\":{done.ToString().ToLower()}";
 
             if (!string.IsNullOrEmpty(customType))
             {
@@ -520,7 +531,6 @@ namespace VyinChatSdk.Tests.Runtime.MessageHandler
 
             if (!string.IsNullOrEmpty(data))
             {
-                // Escape data string to ensure valid JSON
                 var escapedData = data.Replace("\"", "\\\"");
                 json += $",\"data\":\"{escapedData}\"";
             }
@@ -541,15 +551,22 @@ namespace VyinChatSdk.Tests.Runtime.MessageHandler
             long createdAt = 1234567890,
             bool done = false,
             string customType = null,
-            string data = null)
+            string data = null,
+            string role = null)
         {
             var json = $"MEDI{{\"message_id\":{messageId}," +
-                   $"\"message\":\"{message}\"," +
-                   $"\"channel_url\":\"{channelUrl}\"," +
-                   $"\"user_id\":\"{userId}\"," +
-                   $"\"nickname\":\"{nickname}\"," +
-                   $"\"created_at\":{createdAt}," +
-                   $"\"done\":{done.ToString().ToLower()}";
+                       $"\"message\":\"{message}\"," +
+                       $"\"channel_url\":\"{channelUrl}\"," +
+                       $"\"user\":{{\"user_id\":\"{userId}\",\"nickname\":\"{nickname}\"";
+
+            if (!string.IsNullOrEmpty(role))
+            {
+                json += $",\"role\":\"{role}\"";
+            }
+
+            json += $"}}," +
+                    $"\"created_at\":{createdAt}," +
+                    $"\"done\":{done.ToString().ToLower()}";
 
             if (!string.IsNullOrEmpty(customType))
             {
@@ -558,7 +575,6 @@ namespace VyinChatSdk.Tests.Runtime.MessageHandler
 
             if (!string.IsNullOrEmpty(data))
             {
-                // Escape data string to ensure valid JSON
                 var escapedData = data.Replace("\"", "\\\"");
                 json += $",\"data\":\"{escapedData}\"";
             }

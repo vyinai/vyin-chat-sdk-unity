@@ -5,8 +5,6 @@ namespace VyinChatSdk
         public long MessageId { get; set; }
         public string Message { get; set; }
         public string ChannelUrl { get; set; }
-        public string SenderId { get; set; }
-        public string SenderNickname { get; set; }
         public long CreatedAt { get; set; }
 
         /// <summary>
@@ -27,5 +25,15 @@ namespace VyinChatSdk
         /// Can be used to pass extra information with the message.
         /// </summary>
         public string Data { get; set; }
+
+        /// <summary>
+        /// Request ID for tracking message requests.
+        /// </summary>
+        public string ReqId { get; set; }
+
+        /// <summary>
+        /// Sender information including role.
+        /// </summary>
+        public VcSender Sender { get; set; }
     }
 }

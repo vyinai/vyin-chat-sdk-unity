@@ -3,7 +3,6 @@ using UnityEngine.UI;
 using TMPro;
 using VyinChatSdk;
 using System.Collections.Generic;
-using Newtonsoft.Json;
 
 public class ChatDemoController : MonoBehaviour
 {
@@ -43,11 +42,8 @@ public class ChatDemoController : MonoBehaviour
     public TextMeshProUGUI logText;
     public ScrollRect scrollRect;
 
-    [Header("Auto Test")]
-    [Tooltip("Automatically create channel and send test message on start")]
-    [SerializeField] private bool autoTest = false;
-
     private string currentChannelUrl;
+    private VcGroupChannel _vcGroupChannel;
     private static readonly string UNIQUE_HANDLER_ID = "UNIQUE_HANDLER_ID";
 
     void Start()
@@ -92,25 +88,8 @@ public class ChatDemoController : MonoBehaviour
             // 訂閱訊息事件
             VcGroupChannelHandler groupChannelHandler = new()
             {
-                OnMessageReceived = (inGroupChannel, inMessage) =>
-                {
-                    if (inMessage.SenderId == userId)
-                        return;
-
-                    string displayName = GetDisplayName(inMessage);
-                    string displayText = $"[{displayName}] {inMessage.Message}";
-                    AddOrUpdateMessage(inMessage.MessageId, displayText);
-                },
-
-                OnMessageUpdated = (inGroupChannel, inMessage) =>
-                {
-                    if (inMessage.SenderId == userId)
-                        return;
-
-                    string displayName = GetDisplayName(inMessage);
-                    string displayText = $"[{displayName}] {inMessage.Message}";
-                    AddOrUpdateMessage(inMessage.MessageId, displayText);
-                }
+                OnMessageReceived = HandleIncomingMessage,
+                OnMessageUpdated = HandleIncomingMessage
             };
 
             VcGroupChannel.AddGroupChannelHandler(UNIQUE_HANDLER_ID, groupChannelHandler);
@@ -125,6 +104,16 @@ public class ChatDemoController : MonoBehaviour
         {
             LogErrorWithDebug("[ChatDemo] Start error", e);
         }
+    }
+
+    private void HandleIncomingMessage(VcGroupChannel _, VcBaseMessage message)
+    {
+        if (message.Sender?.UserId == userId)
+            return;
+
+        string displayName = GetDisplayName(message);
+        string displayText = $"[{displayName}] {message.Message}";
+        AddOrUpdateMessage(message.MessageId, displayText);
     }
 
     void OnDestroy()
@@ -176,6 +165,7 @@ public class ChatDemoController : MonoBehaviour
                     return;
                 }
 
+                _vcGroupChannel = retrievedChannel;
                 AppendLogText($"[ChatDemo] GetChannel success!");
                 AppendLogText($"  - Channel URL: {retrievedChannel.ChannelUrl}");
                 AppendLogText($"  - Name: {retrievedChannel.Name}");
@@ -183,29 +173,10 @@ public class ChatDemoController : MonoBehaviour
                 AppendLogText("──────────────────────────────");
                 AppendLogText("AI ChatBot connected!");
                 AppendLogText("Please enter a message above to start chatting.");
-
-                // 發送測試訊息
-                if (autoTest)
-                {
-                    SendTestMessage(currentChannelUrl);
-                }
             });
         }
 
         VcGroupChannelModule.CreateGroupChannel(channelCreateParams, channelCreateCallback);
-    }
-
-    private void SendTestMessage(string channelUrl)
-    {
-        AppendLogText("──────────────────────────────");
-        if (string.IsNullOrEmpty(channelUrl))
-        {
-            AppendLogText("[ChatDemo] No channel available");
-            return;
-        }
-
-        string testMessage = $"Hello from Unity! Time: {System.DateTime.Now:HH:mm:ss}";
-        SendMessageInternal(channelUrl, testMessage);
     }
 
     // MARK: UI Event Handlers
@@ -228,7 +199,7 @@ public class ChatDemoController : MonoBehaviour
                 return;
             }
 
-            SendMessageInternal(currentChannelUrl, msg);
+            SendMessageInternal(msg);
         }
         catch (System.Exception e)
         {
@@ -236,9 +207,9 @@ public class ChatDemoController : MonoBehaviour
         }
     }
 
-    private void SendMessageInternal(string channelUrl, string message)
+    private void SendMessageInternal(string message)
     {
-        VyinChat.SendMessage(channelUrl, message, (sentMessage, error) =>
+        _vcGroupChannel.SendUserMessage(new VcUserMessageCreateParams { Message = message }, (sentMessage, error) =>
         {
             if (!string.IsNullOrEmpty(error))
             {
@@ -269,52 +240,37 @@ public class ChatDemoController : MonoBehaviour
 
     public static string GetDisplayName(VcBaseMessage message)
     {
-        if (message == null) return string.Empty;
+        if (message?.Sender == null) return string.Empty;
 
-        return string.IsNullOrEmpty(message.SenderNickname)
-            ? message.SenderId
-            : message.SenderNickname;
+        return string.IsNullOrEmpty(message.Sender.Nickname)
+            ? message.Sender.UserId
+            : message.Sender.Nickname;
     }
 
     // MARK: Helper Methods
 
-    private static string GetDomainForEnvironment(Environment env)
+    private static string GetDomainForEnvironment(Environment env) => env switch
     {
-        switch (env)
-        {
-            case Environment.PROD:
-                return "gamania.chat";
-            case Environment.DEV:
-                return "dev.gim.beango.com";
-            case Environment.STG:
-                return "stg.gim.beango.com";
-            case Environment.TEST:
-                return "test.gim.beango.com";
-            default:
-                return "gamania.chat";
-        }
-    }
+        Environment.PROD => "gamania.chat",
+        Environment.DEV => "dev.gim.beango.com",
+        Environment.STG => "stg.gim.beango.com",
+        Environment.TEST => "test.gim.beango.com",
+        _ => "gamania.chat"
+    };
 
     private static string GetAppIdForEnvironment(Environment env, string customAppId)
     {
         if (!string.IsNullOrEmpty(customAppId))
-        {
             return customAppId;
-        }
 
-        switch (env)
+        return env switch
         {
-            case Environment.PROD:
-                return "adb53e88-4c35-469a-a888-9e49ef1641b2";
-            case Environment.DEV:
-                return "b553fe2f-4975-4d22-934f-f4aa02167e19";
-            case Environment.STG:
-                return "9c839b9c-0be9-4e98-be4c-1f06345bdb7d";
-            case Environment.TEST:
-                return "1ba5d5e3-73ab-4b47-9b1d-ca1ce967fac2";
-            default:
-                return "adb53e88-4c35-469a-a888-9e49ef1641b2";
-        }
+            Environment.PROD => "adb53e88-4c35-469a-a888-9e49ef1641b2",
+            Environment.DEV => "b553fe2f-4975-4d22-934f-f4aa02167e19",
+            Environment.STG => "9c839b9c-0be9-4e98-be4c-1f06345bdb7d",
+            Environment.TEST => "1ba5d5e3-73ab-4b47-9b1d-ca1ce967fac2",
+            _ => "adb53e88-4c35-469a-a888-9e49ef1641b2"
+        };
     }
 
     private void AppendLogText(string message)
@@ -369,48 +325,4 @@ public class ChatDemoController : MonoBehaviour
         scrollRect.verticalNormalizedPosition = 0f;
     }
 
-    public static VcBaseMessage ParseMessage(string json)
-    {
-        if (string.IsNullOrWhiteSpace(json))
-            return null;
-
-        try
-        {
-            return JsonConvert.DeserializeObject<VcBaseMessage>(json);
-        }
-        catch (JsonException e)
-        {
-            Debug.LogError($"[VyinChatSdk] Failed to parse message JSON: {e}\nJson: {json}");
-            return null;
-        }
-    }
-
-    // Simple JSON parser for channelUrl
-    private string ExtractChannelUrl(string json)
-    {
-        try
-        {
-            if (string.IsNullOrEmpty(json)) return "";
-
-            const string key = "\"channelUrl\"";
-            int keyPos = json.IndexOf(key, System.StringComparison.OrdinalIgnoreCase);
-            if (keyPos < 0) return "";
-
-            int colon = json.IndexOf(':', keyPos + key.Length);
-            if (colon < 0) return "";
-
-            int firstQuote = json.IndexOf('"', colon + 1);
-            if (firstQuote < 0) return "";
-
-            int secondQuote = json.IndexOf('"', firstQuote + 1);
-            if (secondQuote < 0 || secondQuote <= firstQuote + 1) return "";
-
-            return json.Substring(firstQuote + 1, secondQuote - firstQuote - 1);
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"ExtractChannelUrl error: {e}");
-            return "";
-        }
-    }
 }

@@ -8,15 +8,15 @@
 
 using System;
 using System.Collections.Generic;
-using NativeWebSocket;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using UnityEngine;
+using NativeWebSocket;
 using VyinChatSdk;
+using VyinChatSdk.Internal.Data.Mappers;
 using VyinChatSdk.Internal.Data.Network;
 using VyinChatSdk.Internal.Domain.Commands;
 using VyinChatSdk.Internal.Domain.Log;
+using VyinChatSdk.Internal.Domain.Mappers;
 using Logger = VyinChatSdk.Internal.Domain.Log.Logger;
 
 namespace VyinChatSdk.Internal.Platform.Unity.Network
@@ -561,143 +561,11 @@ namespace VyinChatSdk.Internal.Platform.Unity.Network
         private VcBaseMessage ParseMessageFromPayload(string payload)
         {
             if (string.IsNullOrEmpty(payload))
-            {
                 return null;
-            }
 
-            // Simple JSON parsing for message fields
-            var message = new VcBaseMessage();
-
-            // Extract message_id (server may return as "message_id" or "msg_id")
-            var messageIdStr = ExtractJsonValue(payload, "message_id");
-            if (string.IsNullOrEmpty(messageIdStr))
-            {
-                messageIdStr = ExtractJsonValue(payload, "msg_id");
-            }
-            if (long.TryParse(messageIdStr, out var messageId))
-            {
-                message.MessageId = messageId;
-            }
-
-            // Extract message
-            message.Message = ExtractJsonStringValue(payload, "message");
-
-            // Extract channel_url
-            message.ChannelUrl = ExtractJsonStringValue(payload, "channel_url");
-
-            // Extract sender_id (user_id)
-            message.SenderId = ExtractJsonStringValue(payload, "user_id");
-
-            // Extract sender_nickname
-            message.SenderNickname = ExtractJsonStringValue(payload, "nickname");
-
-            // Extract created_at
-            var createdAtStr = ExtractJsonValue(payload, "created_at");
-            if (long.TryParse(createdAtStr, out var createdAt))
-            {
-                message.CreatedAt = createdAt;
-            }
-
-            // Extract done flag
-            var doneStr = ExtractJsonValue(payload, "done");
-            if (bool.TryParse(doneStr, out var done))
-            {
-                message.Done = done;
-            }
-
-            // Extract custom_type
-            message.CustomType = ExtractJsonStringValue(payload, "custom_type");
-
-            // Extract data
-            message.Data = ExtractJsonStringValue(payload, "data");
-
-            return message;
-        }
-
-        private static string ExtractJsonValue(string json, string key)
-        {
-            if (string.IsNullOrEmpty(json))
-            {
-                return null;
-            }
-
-            var keyPattern = $"\"{key}\":";
-            var start = json.IndexOf(keyPattern, StringComparison.Ordinal);
-            if (start < 0)
-            {
-                return null;
-            }
-
-            start += keyPattern.Length;
-
-            // Skip whitespace
-            while (start < json.Length && char.IsWhiteSpace(json[start]))
-            {
-                start++;
-            }
-
-            if (start >= json.Length)
-            {
-                return null;
-            }
-
-            // Check if value is a string (starts with ")
-            if (json[start] == '"')
-            {
-                start++; // Skip opening quote
-
-                // Find the closing quote, handling escaped quotes (\")
-                var end = start;
-                while (end < json.Length)
-                {
-                    if (json[end] == '"')
-                    {
-                        // Check if this quote is escaped
-                        var backslashCount = 0;
-                        var checkPos = end - 1;
-                        while (checkPos >= start && json[checkPos] == '\\')
-                        {
-                            backslashCount++;
-                            checkPos--;
-                        }
-
-                        // If even number of backslashes (including 0), the quote is not escaped
-                        if (backslashCount % 2 == 0)
-                        {
-                            var raw = json.Substring(start, end - start);
-                            try
-                            {
-                                // Unescape JSON string (e.g. \" -> ", \\ -> \, \n -> newline)
-                                // Wrap with quotes so Json.NET can parse escape sequences correctly.
-                                return JsonConvert.DeserializeObject<string>($"\"{raw}\"");
-                            }
-                            catch
-                            {
-                                // Fall back to raw value if unescape fails
-                                return raw;
-                            }
-                        }
-                    }
-                    end++;
-                }
-
-                return null; // No closing quote found
-            }
-
-            // Value is not a string (number, boolean, null)
-            var endChars = new[] { ',', '}', ']', '\r', '\n' };
-            var end2 = json.IndexOfAny(endChars, start);
-            if (end2 < 0)
-            {
-                end2 = json.Length;
-            }
-
-            return json.Substring(start, end2 - start).Trim();
-        }
-
-        private static string ExtractJsonStringValue(string json, string key)
-        {
-            return ExtractJsonValue(json, key);
+            var dto = MessageDtoMapper.ParseFromJson(payload);
+            var bo = MessageDtoMapper.ToBusinessObject(dto);
+            return MessageBoMapper.ToPublicModel(bo);
         }
 
         /// <summary>
