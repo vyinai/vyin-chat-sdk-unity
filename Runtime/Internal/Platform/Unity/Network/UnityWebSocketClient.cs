@@ -101,7 +101,7 @@ namespace VyinChatSdk.Internal.Platform.Unity.Network
             }
             catch (Exception ex)
             {
-                Logger.Error(LogCategory.WebSocket, $"Connect exception: {ex.Message}", ex);
+                Logger.Error(LogCategory.WebSocket, "Connect exception", ex);
                 OnError?.Invoke(new VcException(VcErrorCode.WebSocketConnectionFailed, $"Connect failed: {ex.Message}", ex));
             }
         }
@@ -126,7 +126,7 @@ namespace VyinChatSdk.Internal.Platform.Unity.Network
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(LogCategory.WebSocket, $"Disconnect exception: {ex.Message}", ex);
+                    Logger.Error(LogCategory.WebSocket, "Disconnect exception", ex);
                 }
             }
         }
@@ -268,7 +268,7 @@ namespace VyinChatSdk.Internal.Platform.Unity.Network
             }
             catch (Exception ex)
             {
-                Logger.Error(LogCategory.WebSocket, $"Message decode exception: {ex.Message}", ex);
+                Logger.Error(LogCategory.WebSocket, "Message decode exception", ex);
                 MainThreadDispatcher.Enqueue(() =>
                 {
                     OnError?.Invoke(new VcException(VcErrorCode.MalformedData, $"Failed to decode message: {ex.Message}", ex));
@@ -467,7 +467,7 @@ namespace VyinChatSdk.Internal.Platform.Unity.Network
             }
             catch (Exception ex)
             {
-                Logger.Error(LogCategory.WebSocket, $"Send exception: {ex.Message}", ex);
+                Logger.Error(LogCategory.WebSocket, "Send exception", ex);
                 MainThreadDispatcher.Enqueue(() =>
                 {
                     OnError?.Invoke(new VcException(VcErrorCode.WebSocketConnectionFailed, $"Send failed: {ex.Message}", ex));
@@ -537,7 +537,7 @@ namespace VyinChatSdk.Internal.Platform.Unity.Network
             }
             catch (Exception ex)
             {
-                Logger.Error(LogCategory.WebSocket, $"Error triggering message received: {ex.Message}", ex);
+                Logger.Error(LogCategory.WebSocket, "Error triggering message received", ex);
             }
         }
 
@@ -566,7 +566,7 @@ namespace VyinChatSdk.Internal.Platform.Unity.Network
             }
             catch (Exception ex)
             {
-                Logger.Error(LogCategory.WebSocket, $"Error triggering message updated: {ex.Message}", ex);
+                Logger.Error(LogCategory.WebSocket, "Error triggering message updated", ex);
             }
         }
 

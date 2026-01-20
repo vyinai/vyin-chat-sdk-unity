@@ -138,7 +138,7 @@ namespace VyinChatSdk.Internal.Platform.Unity
 
             onErrorHandler = (error) =>
             {
-                Logger.Error(LogCategory.WebSocket, $"WebSocket error: {error?.Message}", error);
+                Logger.Error(LogCategory.WebSocket, "WebSocket error", error);
 
                 // Cleanup handlers
                 _webSocketClient.OnAuthenticated -= onAuthenticatedHandler;

@@ -57,7 +57,7 @@ namespace VyinChatSdk
             {
                 MainThreadDispatcher.Enqueue(() =>
                 {
-                    Logger.Error(TAG, $"{operationName} failed: {vcEx.Message}", vcEx);
+                    Logger.Error(TAG, $"{operationName} failed", vcEx);
                     callback?.Invoke(null, vcEx);
                 });
             }
@@ -66,7 +66,7 @@ namespace VyinChatSdk
                 var fallback = new VcException(VcErrorCode.UnknownError, $"Unexpected error: {ex.Message}", ex);
                 MainThreadDispatcher.Enqueue(() =>
                 {
-                    Logger.Error(TAG, $"{operationName} error: {fallback.Message}", fallback);
+                    Logger.Error(TAG, $"{operationName} error", fallback);
                     callback?.Invoke(null, fallback);
                 });
             }
@@ -141,7 +141,7 @@ namespace VyinChatSdk
                 }
                 catch (Exception e)
                 {
-                    Logger.Error(TAG, $"Error in handler: {e.Message}", e);
+                    Logger.Error(TAG, "Error in handler", e);
                 }
             }
         }
@@ -162,7 +162,7 @@ namespace VyinChatSdk
                 }
                 catch (Exception e)
                 {
-                    Logger.Error(TAG, $"Error in handler: {e.Message}", e);
+                    Logger.Error(TAG, "Error in handler", e);
                 }
             }
         }
