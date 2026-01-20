@@ -34,8 +34,8 @@ namespace VyinChatSdk.Internal.Data.Mappers
             return new SenderBO
             {
                 UserId = dto.user_id ?? dto.guest_id ?? "",
-                Nickname = dto.nickname ?? "",
-                ProfileUrl = dto.profile_url ?? "",
+                Nickname = dto.name ?? dto.nickname ?? "",
+                ProfileUrl = dto.image ?? dto.profile_url ?? "",
                 Role = ParseRole(dto.role)
             };
         }
