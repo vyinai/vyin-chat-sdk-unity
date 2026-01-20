@@ -71,15 +71,18 @@ namespace VyinChatSdk.Internal.Platform.Unity
             if (_initParams == null)
             {
                 var errorMsg = "VyinChatMain instance hasn't been initialized. Try VyinChat.Init().";
-                Logger.Error(LogCategory.Connection, errorMsg);
-                throw new InvalidOperationException(errorMsg);
+                var error = new VcException(VcErrorCode.InvalidInitialization, errorMsg);
+                Logger.Error(LogCategory.Connection, errorMsg, error);
+                callback?.Invoke(null, error);
+                return;
             }
 
             if (string.IsNullOrEmpty(userId))
             {
                 var errorMsg = "userId is empty.";
-                Logger.Error(LogCategory.Connection, errorMsg);
-                callback?.Invoke(null, errorMsg);
+                var error = new VcException(VcErrorCode.InvalidParameter, errorMsg);
+                Logger.Error(LogCategory.Connection, errorMsg, error);
+                callback?.Invoke(null, error);
                 return;
             }
 
@@ -110,7 +113,7 @@ namespace VyinChatSdk.Internal.Platform.Unity
 
             // Setup event handlers
             Action<string> onAuthenticatedHandler = null;
-            Action<string> onErrorHandler = null;
+            Action<VcException> onErrorHandler = null;
 
             onAuthenticatedHandler = (sessionKey) =>
             {
@@ -135,7 +138,7 @@ namespace VyinChatSdk.Internal.Platform.Unity
 
             onErrorHandler = (error) =>
             {
-                Logger.Error(LogCategory.WebSocket, $"WebSocket error: {error}");
+                Logger.Error(LogCategory.WebSocket, $"WebSocket error: {error?.Message}", error);
 
                 // Cleanup handlers
                 _webSocketClient.OnAuthenticated -= onAuthenticatedHandler;

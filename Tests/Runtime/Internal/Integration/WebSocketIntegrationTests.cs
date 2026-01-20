@@ -98,22 +98,22 @@ namespace VyinChatSdk.Tests.Runtime.Internal.Integration
         public IEnumerator Connect_ShouldTriggerOnConnected_AfterHandshake()
         {
             bool connected = false;
-            string errorMessage = null;
+            VcException error = null;
 
             client.OnConnected += () => connected = true;
-            client.OnError += (error) => errorMessage = error;
+            client.OnError += (ex) => error = ex;
 
             client.Connect(testConfig);
 
             float elapsed = 0f;
-            while (!connected && errorMessage == null && elapsed < CONNECTION_TIMEOUT)
+            while (!connected && error == null && elapsed < CONNECTION_TIMEOUT)
             {
                 client.Update();
                 elapsed += Time.deltaTime;
                 yield return null;
             }
 
-            Assert.IsTrue(connected, $"Should connect to WS. Error: {errorMessage}");
+            Assert.IsTrue(connected, $"Should connect to WS. Error: {error?.Message}");
             Assert.IsTrue(client.IsConnected, "IsConnected should be true");
         }
 
@@ -338,7 +338,7 @@ namespace VyinChatSdk.Tests.Runtime.Internal.Integration
             VyinChat.Init(initParams);
 
             VcUser resultUser = null;
-            string resultError = null;
+            VcException resultError = null;
             bool callbackCalled = false;
 
             // Act
@@ -359,7 +359,7 @@ namespace VyinChatSdk.Tests.Runtime.Internal.Integration
 
             // Assert
             Assert.IsTrue(callbackCalled, "Callback should be called");
-            Assert.IsNull(resultError, $"Error should be null. Got: {resultError}");
+            Assert.IsNull(resultError, $"Error should be null. Got: {resultError?.Message}");
             Assert.IsNotNull(resultUser, "User should not be null");
             Assert.AreEqual(TEST_USER_ID, resultUser.UserId, "UserId should match");
 

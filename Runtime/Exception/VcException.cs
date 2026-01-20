@@ -2,6 +2,7 @@ using System;
 using Newtonsoft.Json;
 using VyinChatSdk.Internal.Data.Mappers;
 using VyinChatSdk.Internal.Data.Network;
+using VyinChatSdk.Internal.Domain.Log;
 
 namespace VyinChatSdk
 {
@@ -78,7 +79,11 @@ namespace VyinChatSdk
                         // Map legacy or raw codes to VcErrorCode
                         var vcErrorCode = ErrorCodeMapper.FromApiCode(errorDto.Code);
 
-                        return new VcException(vcErrorCode, message, response.Body);
+                        var exception = new VcException(vcErrorCode, message, response.Body);
+                        Logger.Error(LogCategory.Http,
+                            $"HTTP error code mapped: apiCode={errorDto.Code}, vcCode={(int)vcErrorCode}",
+                            exception);
+                        return exception;
                     }
                 }
                 catch
@@ -98,13 +103,26 @@ namespace VyinChatSdk
                     400 => "Invalid request parameters",
                     401 => "Invalid or missing session key",
                     403 => "Invalid session key",
-                    404 => "Channel not found",
+                    404 => "Resource not found",
                     500 => "Internal server error",
                     _ => fallbackMessage
                 };
             }
 
-            return new VcException(fallbackErrorCode, fallbackMessage, response.Body);
+            var fallbackException = new VcException(fallbackErrorCode, fallbackMessage, response.Body);
+            Logger.Error(LogCategory.Http,
+                $"HTTP error fallback: status={response.StatusCode}, vcCode={(int)fallbackErrorCode}",
+                fallbackException);
+            return fallbackException;
+        }
+
+        internal static VcException FromWebSocketCloseCode(ushort closeCode, string message = null)
+        {
+            var errorCode = ErrorCodeMapper.FromWebSocketCloseCode(closeCode);
+            var errorMessage = string.IsNullOrEmpty(message)
+                ? $"WebSocket closed with code: {closeCode}"
+                : message;
+            return new VcException(errorCode, errorMessage);
         }
 
         private class ApiErrorDto

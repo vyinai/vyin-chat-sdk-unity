@@ -41,7 +41,7 @@ namespace VyinChatSdk.Tests.Editor.Internal.Data.Mappers
             // Assert
             Assert.AreEqual(VcErrorCode.ErrInvalidValue, ErrorCodeMapper.FromHttpStatusFallback(400));
             Assert.AreEqual(VcErrorCode.ErrInvalidSession, ErrorCodeMapper.FromHttpStatusFallback(401));
-            Assert.AreEqual(VcErrorCode.ErrChannelNotFound, ErrorCodeMapper.FromHttpStatusFallback(404));
+            Assert.AreEqual(VcErrorCode.ErrNotFound, ErrorCodeMapper.FromHttpStatusFallback(404));
             Assert.AreEqual(VcErrorCode.ErrInternal, ErrorCodeMapper.FromHttpStatusFallback(500));
         }
 

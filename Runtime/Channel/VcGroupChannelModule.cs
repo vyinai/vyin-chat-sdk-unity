@@ -30,7 +30,7 @@ namespace VyinChatSdk
         /// Retrieves a group channel by its URL using callback pattern.
         /// </summary>
         /// <param name="channelUrl">The unique URL of the channel to retrieve</param>
-        /// <param name="callback">Callback invoked with the channel or error message</param>
+        /// <param name="callback">Callback invoked with the channel or error</param>
         public static void GetGroupChannel(
             string channelUrl,
             VcGroupChannelCallbackHandler callback)
@@ -69,7 +69,7 @@ namespace VyinChatSdk
         /// Creates a new group channel using callback pattern.
         /// </summary>
         /// <param name="createParams">Parameters for creating the channel</param>
-        /// <param name="callback">Callback invoked with the created channel or error message</param>
+        /// <param name="callback">Callback invoked with the created channel or error</param>
         public static void CreateGroupChannel(
             VcGroupChannelCreateParams createParams,
             VcGroupChannelCallbackHandler callback)
@@ -114,9 +114,9 @@ namespace VyinChatSdk
             // Convert to new API by wrapping the callback
             VcGroupChannelCallbackHandler handler = (channel, error) =>
             {
-                if (!string.IsNullOrEmpty(error))
+                if (error != null)
                 {
-                    callback.Invoke(null, error);
+                    callback.Invoke(null, error.Message);
                     return;
                 }
 
@@ -152,19 +152,19 @@ namespace VyinChatSdk
             }
             catch (VcException vcEx)
             {
-                Logger.Error(TAG, $"{operationName} failed: {vcEx.Message}", vcEx);
                 MainThreadDispatcher.Enqueue(() =>
                 {
-                    callback?.Invoke(null, vcEx.Message);
+                    Logger.Error(TAG, $"{operationName} failed: {vcEx.Message}", vcEx);
+                    callback?.Invoke(null, vcEx);
                 });
             }
             catch (Exception ex)
             {
-                Logger.Error(TAG, $"{operationName} error: {ex.Message}", ex);
-                var errorMessage = $"Unexpected error: {ex.Message}";
+                var fallback = new VcException(VcErrorCode.UnknownError, $"Unexpected error: {ex.Message}", ex);
                 MainThreadDispatcher.Enqueue(() =>
                 {
-                    callback?.Invoke(null, errorMessage);
+                    Logger.Error(TAG, $"{operationName} error: {fallback.Message}", fallback);
+                    callback?.Invoke(null, fallback);
                 });
             }
         }

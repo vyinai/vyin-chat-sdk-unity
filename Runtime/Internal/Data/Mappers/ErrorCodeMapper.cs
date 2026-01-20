@@ -190,7 +190,7 @@ namespace VyinChatSdk.Internal.Data.Mappers
                 400 => VcErrorCode.ErrInvalidValue,       // Bad Request
                 401 => VcErrorCode.ErrInvalidSession,     // Unauthorized
                 403 => VcErrorCode.ErrForbidden,          // Forbidden
-                404 => VcErrorCode.ErrChannelNotFound,    // Not Found (Generic default, context aware)
+                404 => VcErrorCode.ErrNotFound,           // Not Found (generic)
                 412 => VcErrorCode.ErrPreconditionFailed, // Precondition Failed
                 429 => VcErrorCode.ErrServerBusy,         // Too Many Requests
                 500 => VcErrorCode.ErrInternal,           // Internal Server Error

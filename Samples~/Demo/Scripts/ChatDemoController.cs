@@ -74,9 +74,9 @@ public class ChatDemoController : MonoBehaviour
             AppendLogText($"[ChatDemo] WS Host: {wsHost}");
             VyinChat.Connect(userId, token, apiHost, wsHost, (inUser, inError) =>
             {
-                if (!string.IsNullOrEmpty(inError))
+                if (inError != null)
                 {
-                    AppendLogText("[ChatDemo] Connection failed: " + inError);
+                    AppendLogText("[ChatDemo] Connection failed: " + inError.Message);
                     return;
                 }
                 AppendLogText($"[ChatDemo] Connected! Welcome, {inUser.UserId}!");
@@ -146,11 +146,11 @@ public class ChatDemoController : MonoBehaviour
             IsDistinct = true
         };
 
-        void channelCreateCallback(VcGroupChannel channel, string error)
+        void channelCreateCallback(VcGroupChannel channel, VcException error)
         {
-            if (!string.IsNullOrEmpty(error))
+            if (error != null)
             {
-                AppendLogText("[ChatDemo] Failed to create channel: " + error);
+                AppendLogText("[ChatDemo] Failed to create channel: " + error.Message);
                 return;
             }
 
@@ -159,9 +159,9 @@ public class ChatDemoController : MonoBehaviour
 
             VcGroupChannelModule.GetGroupChannel(currentChannelUrl, (retrievedChannel, getError) =>
             {
-                if (!string.IsNullOrEmpty(getError))
+                if (getError != null)
                 {
-                    AppendLogText($"[ChatDemo] GetChannel failed: {getError}");
+                    AppendLogText($"[ChatDemo] GetChannel failed: {getError.Message}");
                     return;
                 }
 
@@ -211,9 +211,9 @@ public class ChatDemoController : MonoBehaviour
     {
         _vcGroupChannel.SendUserMessage(new VcUserMessageCreateParams { Message = message }, (sentMessage, error) =>
         {
-            if (!string.IsNullOrEmpty(error))
+            if (error != null)
             {
-                AppendLogText($"[ChatDemo] Failed to send: {error}");
+                AppendLogText($"[ChatDemo] Failed to send: {error.Message}");
                 return;
             }
 

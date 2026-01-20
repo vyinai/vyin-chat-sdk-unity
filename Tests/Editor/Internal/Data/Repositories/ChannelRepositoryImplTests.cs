@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using VyinChatSdk.Internal.Data.Cache;
 using VyinChatSdk.Internal.Data.Network;
 using VyinChatSdk.Internal.Data.Repositories;
+using VyinChatSdk.Tests.Editor;
 using VyinChatSdk.Tests.Mocks.Platform;
 
 namespace VyinChatSdk.Tests.Editor.Internal.Data.Repositories
@@ -111,17 +112,20 @@ namespace VyinChatSdk.Tests.Editor.Internal.Data.Repositories
         #region GetChannel - Error Cases
 
         [Test]
-        public void GetChannel_ShouldThrow_When404_ChannelNotFound()
+        public void GetChannel_ShouldThrow_When404_NotFound()
         {
             // Arrange
             QueueErrorResponse(404, "Channel not found");
             SetupSessionKey();
 
+            // Expect error log from VcException.FromHttpResponse
+            TestLogHelper.ExpectHttpErrorFallback(404);
+
             // Act & Assert
             var ex = Assert.Throws<VcException>(() =>
                 _repository.GetChannelAsync(TestChannelUrl).GetAwaiter().GetResult());
 
-            Assert.AreEqual(VcErrorCode.ErrChannelNotFound, ex.ErrorCode);
+            Assert.AreEqual(VcErrorCode.ErrNotFound, ex.ErrorCode);
             Assert.That(ex.Message, Does.Contain("not found").IgnoreCase);
         }
 
@@ -131,6 +135,9 @@ namespace VyinChatSdk.Tests.Editor.Internal.Data.Repositories
             // Arrange
             QueueErrorResponse(403, "Invalid session key");
             SetupSessionKey("invalid-session-key");
+
+            // Expect error log from VcException.FromHttpResponse
+            TestLogHelper.ExpectHttpErrorFallback(403);
 
             // Act & Assert
             var ex = Assert.Throws<VcException>(() =>
@@ -146,6 +153,9 @@ namespace VyinChatSdk.Tests.Editor.Internal.Data.Repositories
             // Arrange - Don't set session key (simulating before WebSocket connect)
             QueueErrorResponse(401, "No session key");
 
+            // Expect error log from VcException.FromHttpResponse
+            TestLogHelper.ExpectHttpErrorFallback(401);
+
             // Act & Assert
             var ex = Assert.Throws<VcException>(() =>
                 _repository.GetChannelAsync(TestChannelUrl).GetAwaiter().GetResult());
@@ -160,6 +170,9 @@ namespace VyinChatSdk.Tests.Editor.Internal.Data.Repositories
             // Arrange
             QueueErrorResponse(500, "Internal server error");
             SetupSessionKey();
+
+            // Expect error log from VcException.FromHttpResponse
+            TestLogHelper.ExpectHttpErrorFallback(500);
 
             // Act & Assert
             var ex = Assert.Throws<VcException>(() =>
@@ -284,6 +297,9 @@ namespace VyinChatSdk.Tests.Editor.Internal.Data.Repositories
             QueueErrorResponse(404, "Not found"); // Get after delete
             SetupSessionKey();
 
+            // Expect error log from VcException.FromHttpResponse when 404 is returned
+            TestLogHelper.ExpectHttpErrorFallback(404);
+
             // Act - Get (caches), delete, then try to get again
             var original = repositoryWithCache.GetChannelAsync(TestChannelUrl).GetAwaiter().GetResult();
             repositoryWithCache.DeleteChannelAsync(TestChannelUrl).GetAwaiter().GetResult();
@@ -292,7 +308,7 @@ namespace VyinChatSdk.Tests.Editor.Internal.Data.Repositories
             var ex = Assert.Throws<VcException>(() =>
                 repositoryWithCache.GetChannelAsync(TestChannelUrl).GetAwaiter().GetResult());
 
-            Assert.AreEqual(VcErrorCode.ErrChannelNotFound, ex.ErrorCode);
+            Assert.AreEqual(VcErrorCode.ErrNotFound, ex.ErrorCode);
             Assert.AreEqual(3, _mockHttpClient.RequestHistory.Count, "Should make 3 HTTP requests (get, delete, get)");
         }
 

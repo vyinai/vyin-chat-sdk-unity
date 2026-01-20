@@ -55,19 +55,19 @@ namespace VyinChatSdk
             }
             catch (VcException vcEx)
             {
-                Logger.Error(TAG, $"{operationName} failed: {vcEx.Message}", vcEx);
                 MainThreadDispatcher.Enqueue(() =>
                 {
-                    callback?.Invoke(null, vcEx.Message);
+                    Logger.Error(TAG, $"{operationName} failed: {vcEx.Message}", vcEx);
+                    callback?.Invoke(null, vcEx);
                 });
             }
             catch (Exception ex)
             {
-                Logger.Error(TAG, $"{operationName} error: {ex.Message}", ex);
-                var errorMessage = $"Unexpected error: {ex.Message}";
+                var fallback = new VcException(VcErrorCode.UnknownError, $"Unexpected error: {ex.Message}", ex);
                 MainThreadDispatcher.Enqueue(() =>
                 {
-                    callback?.Invoke(null, errorMessage);
+                    Logger.Error(TAG, $"{operationName} error: {fallback.Message}", fallback);
+                    callback?.Invoke(null, fallback);
                 });
             }
         }

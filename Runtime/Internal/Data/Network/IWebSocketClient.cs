@@ -31,7 +31,7 @@ namespace VyinChatSdk.Internal.Data.Network
         /// <summary>
         /// Event triggered when an error occurs
         /// </summary>
-        event Action<string> OnError;
+        event Action<VcException> OnError;
 
         /// <summary>
         /// Event triggered when authentication is successful (LOGI received)

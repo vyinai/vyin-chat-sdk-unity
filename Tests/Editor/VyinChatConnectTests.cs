@@ -1,7 +1,4 @@
 using NUnit.Framework;
-using System;
-using UnityEngine;
-using UnityEngine.TestTools;
 using VyinChatSdk;
 
 namespace VyinChatSdk.Tests.Editor
@@ -36,31 +33,36 @@ namespace VyinChatSdk.Tests.Editor
         }
 
         [Test]
-        public void Connect_WithoutInit_ShouldThrow()
+        public void Connect_WithoutInit_ShouldCallCallbackWithError()
         {
             // Arrange
             VyinChat.ResetForTesting(); // Reset to uninitialize state
+            VcException resultError = null;
 
             // Expect error log
-            LogAssert.Expect(LogType.Error, "[Connection] VyinChatMain instance hasn't been initialized. Try VyinChat.Init().");
+            TestLogHelper.ExpectConnectionError(@"VyinChatMain instance hasn't been initialized"); 
 
-            // Act & Assert
-            Assert.Throws<InvalidOperationException>(() =>
+            // Act
+            VyinChat.Connect(TEST_USER_ID, TEST_AUTH_TOKEN, (user, error) =>
             {
-                VyinChat.Connect(TEST_USER_ID, TEST_AUTH_TOKEN, (user, error) => { });
+                resultError = error;
             });
+
+            // Assert
+            Assert.IsNotNull(resultError, "Error should not be null");
+            Assert.That(resultError.Message, Does.Contain("initialized"));
         }
 
         [Test]
         public void Connect_WithNullUserId_ShouldCallCallbackWithError()
         {
             // Arrange
-            string resultError = null;
+            VcException resultError = null;
             VcUser resultUser = null;
             bool callbackCalled = false;
 
             // Expect error log
-            LogAssert.Expect(LogType.Error, "[Connection] userId is empty.");
+            TestLogHelper.ExpectConnectionError(@"userId is empty");
 
             // Act
             VyinChat.Connect(null, TEST_AUTH_TOKEN, (user, error) =>
@@ -74,19 +76,19 @@ namespace VyinChatSdk.Tests.Editor
             Assert.IsTrue(callbackCalled, "Callback should be called");
             Assert.IsNull(resultUser, "User should be null");
             Assert.IsNotNull(resultError, "Error should not be null");
-            Assert.That(resultError, Does.Contain("userId"));
+            Assert.That(resultError.Message, Does.Contain("userId"));
         }
 
         [Test]
         public void Connect_WithEmptyUserId_ShouldCallCallbackWithError()
         {
             // Arrange
-            string resultError = null;
+            VcException resultError = null;
             VcUser resultUser = null;
             bool callbackCalled = false;
 
             // Expect error log
-            LogAssert.Expect(LogType.Error, "[Connection] userId is empty.");
+            TestLogHelper.ExpectConnectionError(@"userId is empty");
 
             // Act
             VyinChat.Connect("", TEST_AUTH_TOKEN, (user, error) =>
@@ -100,7 +102,7 @@ namespace VyinChatSdk.Tests.Editor
             Assert.IsTrue(callbackCalled, "Callback should be called");
             Assert.IsNull(resultUser, "User should be null");
             Assert.IsNotNull(resultError, "Error should not be null");
-            Assert.That(resultError, Does.Contain("userId"));
+            Assert.That(resultError.Message, Does.Contain("userId"));
         }
     }
 }
