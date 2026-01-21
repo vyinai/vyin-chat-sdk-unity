@@ -4,9 +4,20 @@ using TMPro;
 using VyinChatSdk;
 using System.Collections.Generic;
 
+/// <summary>
+/// VyinChat SDK Demo - Demonstrates core SDK functionality.
+///
+/// SDK Usage Flow:
+/// 1. Initialize SDK with VyinChat.Init()
+/// 2. Connect to server with VyinChat.Connect()
+/// 3. Create/Get channel with VcGroupChannelModule
+/// 4. Send messages with VcGroupChannel.SendUserMessage()
+/// 5. Receive messages via VcGroupChannel.AddGroupChannelHandler()
+/// </summary>
 public class ChatDemoController : MonoBehaviour
 {
-    // MARK: UI Elements
+    #region Inspector Fields
+
     [Header("SDK Configuration")]
     [Tooltip("Environment (PROD, DEV, STG, TEST)")]
     [SerializeField] private Environment environment = Environment.PROD;
@@ -20,294 +31,359 @@ public class ChatDemoController : MonoBehaviour
     [Tooltip("Auth Token (optional, leave empty if not needed)")]
     [SerializeField] private string authToken = "";
 
-    // Environment enum
-    public enum Environment
-    {
-        PROD,
-        DEV,
-        STG,
-        TEST
-    }
-
     [Header("Channel Configuration")]
     [Tooltip("Channel name to create")]
     [SerializeField] private string channelName = "Unity Test Channel";
 
-    [Tooltip("Other users to invite to the channel")]
-    [SerializeField] private List<string> inviteUserIds = new() { "testuser2" };
+    [Tooltip("Bot ID to invite to the channel")]
+    [SerializeField] private string botId = "vyin_chat_openai";
+
+    [Tooltip("Other users to invite to the channel (optional)")]
+    [SerializeField] private List<string> inviteUserIds = new();
+
+    [Header("Debug Options")]
+    [Tooltip("When enabled, pending and sent messages are shown as separate entries")]
+    [SerializeField] private bool showAckAsSeparateMessages;
+
+    [Tooltip("When enabled, updated messages are shown as separate entries instead of replacing the original")]
+    [SerializeField] private bool showUpdatesAsSeparateMessages;
 
     [Header("UI Elements")]
-    public TMP_InputField inputField;
-    public Button sendButton;
-    public TextMeshProUGUI logText;
-    public ScrollRect scrollRect;
+    [SerializeField] private TMP_InputField inputField;
+    [SerializeField] private Button sendButton;
+    [SerializeField] private TextMeshProUGUI logText;
+    [SerializeField] private ScrollRect scrollRect;
 
-    private string currentChannelUrl;
-    private VcGroupChannel _vcGroupChannel;
-    private static readonly string UNIQUE_HANDLER_ID = "UNIQUE_HANDLER_ID";
+    #endregion
 
-    void Start()
+    #region Private Fields
+
+    private const string HANDLER_ID = "ChatDemoHandler";
+    private VcGroupChannel _currentChannel;
+    private long _pendingMessageId = -1;
+    private readonly Dictionary<long, (string message, string meta1, string meta2)> _messageCache = new();
+
+    #endregion
+
+    #region Unity Lifecycle
+
+    private void Start()
     {
-        try
+        SetupUI();
+        InitializeAndConnect();
+    }
+
+    private void OnDestroy()
+    {
+        // Cleanup: Remove message handler
+        VcGroupChannel.RemoveGroupChannelHandler(HANDLER_ID);
+    }
+
+    #endregion
+
+    #region SDK Step 1: Initialize
+
+    /// <summary>
+    /// Step 1: Initialize SDK with app configuration.
+    /// </summary>
+    private void InitializeAndConnect()
+    {
+        var (domain, actualAppId) = GetEnvironmentConfig();
+        LogInfo($"Environment: {environment}");
+        LogInfo($"AppId: {actualAppId}");
+
+        // Step 1: Initialize SDK
+        var initParams = new VcInitParams(actualAppId, logLevel: VcLogLevel.Debug);
+        VyinChat.Init(initParams);
+        LogInfo("SDK Initialized");
+
+        // Proceed to Step 2
+        ConnectToServer(domain, actualAppId);
+    }
+
+    #endregion
+
+    #region SDK Step 2: Connect
+
+    /// <summary>
+    /// Step 2: Connect to VyinChat server.
+    /// </summary>
+    private void ConnectToServer(string domain, string actualAppId)
+    {
+        var apiHost = $"https://{actualAppId}.{domain}";
+        var wsHost = $"wss://{actualAppId}.{domain}";
+        var token = string.IsNullOrEmpty(authToken) ? null : authToken;
+
+        LogInfo($"Connecting as '{userId}'...");
+        VyinChat.Connect(userId, token, apiHost, wsHost, OnConnected);
+    }
+
+    private void OnConnected(VcUser user, VcException error)
+    {
+        if (error != null)
         {
-            // 根據環境設定配置
-            AppendLogText($"[ChatDemo] Environment: {environment}");
-            string domain = GetDomainForEnvironment(environment);
-            string actualAppId = GetAppIdForEnvironment(environment, appId);
-            AppendLogText($"[ChatDemo] Domain: {domain}");
-            AppendLogText($"[ChatDemo] AppId: {actualAppId}");
-            AppendLogText("──────────────────────────────");
-
-            // 初始化 VyinChat SDK
-            AppendLogText("[ChatDemo] Initializing VyinChat...");
-            AppendLogText("──────────────────────────────");
-            VcInitParams initParams = new VcInitParams(actualAppId, logLevel: VcLogLevel.Debug);
-            VyinChat.Init(initParams);
-
-            // 連線 VyinChat
-            AppendLogText($"[ChatDemo] Connecting as '{userId}'...");
-            AppendLogText("──────────────────────────────");
-            string token = string.IsNullOrEmpty(authToken) ? null : authToken;
-            string apiHost = $"https://{actualAppId}.{domain}";
-            string wsHost = $"wss://{actualAppId}.{domain}";
-            AppendLogText($"[ChatDemo] API Host: {apiHost}");
-            AppendLogText($"[ChatDemo] WS Host: {wsHost}");
-            VyinChat.Connect(userId, token, apiHost, wsHost, (inUser, inError) =>
-            {
-                if (inError != null)
-                {
-                    AppendLogText("[ChatDemo] Connection failed: " + inError.Message);
-                    return;
-                }
-                AppendLogText($"[ChatDemo] Connected! Welcome, {inUser.UserId}!");
-
-                // 連接成功後，建立 AI ChatBot 聊天室
-                CreateAIChatBotChannel();
-            });
-
-            // 訂閱訊息事件
-            VcGroupChannelHandler groupChannelHandler = new()
-            {
-                OnMessageReceived = HandleIncomingMessage,
-                OnMessageUpdated = HandleIncomingMessage
-            };
-
-            VcGroupChannel.AddGroupChannelHandler(UNIQUE_HANDLER_ID, groupChannelHandler);
-
-            // Button 綁定
-            if (sendButton != null)
-            {
-                sendButton.onClick.AddListener(OnSendClick);
-            }
+            LogError($"Connection failed: {error.Message}");
+            return;
         }
-        catch (System.Exception e)
+
+        LogInfo($"Connected! Welcome, {user.UserId}!");
+
+        // Proceed to Step 3
+        CreateOrGetChannel();
+    }
+
+    #endregion
+
+    #region SDK Step 3: Create/Get Channel
+
+    /// <summary>
+    /// Step 3: Create or get a group channel.
+    /// </summary>
+    private void CreateOrGetChannel()
+    {
+        LogSeparator();
+        LogInfo($"Creating channel '{channelName}'...");
+
+        // Build member list
+        var members = new List<string> { userId };
+        if (!string.IsNullOrEmpty(botId))
         {
-            LogErrorWithDebug("[ChatDemo] Start error", e);
+            LogInfo($"Creating with botId: '{botId}'...");
+            members.Add(botId);
+        }
+        members.AddRange(inviteUserIds);
+
+        // Create channel params
+        var createParams = new VcGroupChannelCreateParams
+        {
+            Name = channelName,
+            UserIds = members,
+            OperatorUserIds = new List<string> { userId },
+            IsDistinct = true  // Reuse existing channel if members match
+        };
+
+        // Create channel
+        VcGroupChannelModule.CreateGroupChannel(createParams, OnChannelCreated);
+    }
+
+    private void OnChannelCreated(VcGroupChannel channel, VcException error)
+    {
+        if (error != null)
+        {
+            LogError($"Failed to create channel: {error.Message}");
+            return;
+        }
+
+        LogInfo($"Channel created!");
+
+        // Get channel info
+        VcGroupChannelModule.GetGroupChannel(channel.ChannelUrl, OnChannelRetrieved);
+    }
+
+    private void OnChannelRetrieved(VcGroupChannel channel, VcException error)
+    {
+        if (error != null)
+        {
+            LogError($"Failed to get channel: {error.Message}");
+            return;
+        }
+
+        _currentChannel = channel;
+        LogInfo($"Channel ready!");
+        LogInfo($"  Name: {channel.Name}");
+        LogInfo($"  URL: {channel.ChannelUrl}");
+
+        // Now register message handler (Step 5)
+        RegisterGroupChannelMessageHandler();
+
+        LogSeparator();
+        LogInfo("Ready to chat! Type a message above.");
+    }
+
+    #endregion
+
+    #region SDK Step 4: Send Message
+
+    /// <summary>
+    /// Step 4: Send a user message.
+    /// </summary>
+    private void SendMessage(string text)
+    {
+        if (_currentChannel == null)
+        {
+            LogError("No channel available");
+            return;
+        }
+
+        // Show pending state
+        ShowPendingMessage(text);
+
+        // Send message via SDK
+        var messageParams = new VcUserMessageCreateParams { Message = text };
+        _currentChannel.SendUserMessage(messageParams, OnMessageSent);
+    }
+
+    private void OnMessageSent(VcBaseMessage message, VcException error)
+    {
+        // Clear pending state
+        if (_pendingMessageId > 0 && !showAckAsSeparateMessages)
+        {
+            _messageCache.Remove(_pendingMessageId);
+        }
+        _pendingMessageId = -1;
+
+        if (error != null)
+        {
+            LogError($"Failed to send: {error.Message}");
+            return;
+        }
+
+        if (message != null)
+        {
+            var displayName = GetDisplayName(message);
+            UpdateMessageDisplay(message.MessageId, $"[{displayName}] {message.Message}", "  -> Sent");
         }
     }
 
-    private void HandleIncomingMessage(VcGroupChannel _, VcBaseMessage message)
+    #endregion
+
+    #region SDK Step 5: Receive Messages
+
+    /// <summary>
+    /// Step 5: Register handler via VcGroupChannel.AddGroupChannelHandler().
+    /// </summary>
+    private void RegisterGroupChannelMessageHandler()
     {
+        var handler = new VcGroupChannelHandler
+        {
+            OnMessageReceived = (channel, msg) => HandleMessage(msg, isUpdate: false),
+            OnMessageUpdated = (channel, msg) => HandleMessage(msg, isUpdate: true)
+        };
+
+        VcGroupChannel.AddGroupChannelHandler(HANDLER_ID, handler);
+        LogInfo("GroupChannel handler registered");
+    }
+
+    private void HandleMessage(VcBaseMessage message, bool isUpdate)
+    {
+        // Skip own messages (already shown via OnMessageSent)
         if (message.Sender?.UserId == userId)
             return;
 
-        string displayName = GetDisplayName(message);
-        string displayText = $"[{displayName}] {message.Message}";
-        AddOrUpdateMessage(message.MessageId, displayText);
+        var eventType = isUpdate ? "Updated" : "Received";
+
+        // Debug log
+        Debug.Log($"[Message {eventType}] '{message.Message}' | Type: '{message.CustomType}' | Done: {message.Done}");
+
+        // Display in UI
+        var displayName = GetDisplayName(message);
+        var meta1 = $"  -> {eventType} | Type: '{message.CustomType}' | Done: {message.Done}";
+        var meta2 = $"  -> Data: '{message.Data ?? ""}'";
+
+        // Generate unique ID for separate display mode
+        var displayId = (showUpdatesAsSeparateMessages && isUpdate)
+            ? message.MessageId * 1000 + System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() % 1000
+            : message.MessageId;
+
+        UpdateMessageDisplay(displayId, $"[{displayName}] {message.Message}", meta1, meta2);
     }
 
-    void OnDestroy()
+    #endregion
+
+    #region UI Helpers
+
+    private void SetupUI()
     {
-        try
+        if (sendButton != null)
         {
-            // 取消訂閱
-            VcGroupChannel.RemoveGroupChannelHandler(UNIQUE_HANDLER_ID);
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"ChatDemoController OnDestroy error: {e}");
-        }
-    }
-
-    private void CreateAIChatBotChannel()
-    {
-        AppendLogText("──────────────────────────────");
-        AppendLogText($"[ChatDemo] Creating channel '{channelName}'...");
-
-        // 將當前用戶和邀請用戶合併
-        List<string> allMembers = new() { userId };
-        allMembers.AddRange(inviteUserIds);
-
-        VcGroupChannelCreateParams channelCreateParams = new()
-        {
-            Name = channelName,
-            UserIds = allMembers,
-            OperatorUserIds = new() { userId, "shuyu", "andy-console" },
-            IsDistinct = true
-        };
-
-        void channelCreateCallback(VcGroupChannel channel, VcException error)
-        {
-            if (error != null)
-            {
-                AppendLogText("[ChatDemo] Failed to create channel: " + error.Message);
-                return;
-            }
-
-            currentChannelUrl = channel.ChannelUrl;
-            AppendLogText($"[ChatDemo] Channel created: '{channel.Name}', ChannelUrl: '{currentChannelUrl}'");
-
-            VcGroupChannelModule.GetGroupChannel(currentChannelUrl, (retrievedChannel, getError) =>
-            {
-                if (getError != null)
-                {
-                    AppendLogText($"[ChatDemo] GetChannel failed: {getError.Message}");
-                    return;
-                }
-
-                _vcGroupChannel = retrievedChannel;
-                AppendLogText($"[ChatDemo] GetChannel success!");
-                AppendLogText($"  - Channel URL: {retrievedChannel.ChannelUrl}");
-                AppendLogText($"  - Name: {retrievedChannel.Name}");
-                AppendLogText($"  - Members: {retrievedChannel.MemberCount}");
-                AppendLogText("──────────────────────────────");
-                AppendLogText("AI ChatBot connected!");
-                AppendLogText("Please enter a message above to start chatting.");
-            });
-        }
-
-        VcGroupChannelModule.CreateGroupChannel(channelCreateParams, channelCreateCallback);
-    }
-
-    // MARK: UI Event Handlers
-    private void OnSendClick()
-    {
-        try
-        {
-            if (inputField == null) return;
-
-            string msg = inputField.text.Trim();
-            if (string.IsNullOrEmpty(msg)) return;
-
-            inputField.text = "";
-            inputField.ActivateInputField(); // Keep input field focused
-
-            if (string.IsNullOrEmpty(currentChannelUrl))
-            {
-                AppendLogText("[ChatDemo] No channel available. Creating one...");
-                CreateAIChatBotChannel();
-                return;
-            }
-
-            SendMessageInternal(msg);
-        }
-        catch (System.Exception e)
-        {
-            LogErrorWithDebug("[ChatDemo] OnSendClick error", e);
+            sendButton.onClick.AddListener(OnSendButtonClicked);
         }
     }
 
-    private void SendMessageInternal(string message)
+    private void OnSendButtonClicked()
     {
-        _vcGroupChannel.SendUserMessage(new VcUserMessageCreateParams { Message = message }, (sentMessage, error) =>
+        if (inputField == null) return;
+
+        var text = inputField.text.Trim();
+        if (string.IsNullOrEmpty(text)) return;
+
+        inputField.text = "";
+        inputField.ActivateInputField();
+
+        if (_currentChannel == null)
         {
-            if (error != null)
-            {
-                AppendLogText($"[ChatDemo] Failed to send: {error.Message}");
-                return;
-            }
+            LogInfo("No channel available. Creating one...");
+            CreateOrGetChannel();
+            return;
+        }
 
-            try
-            {
-                if (sentMessage != null)
-                {
-                    string displayName = GetDisplayName(sentMessage);
-                    AddOrUpdateMessage(sentMessage.MessageId, $"[{displayName}] {sentMessage.Message}");
-                }
-            }
-            catch (System.Exception e)
-            {
-                LogErrorWithDebug("[ChatDemo] Error handling sent message", e);
-            }
-        });
+        SendMessage(text);
     }
 
-    private void LogErrorWithDebug(string message, System.Exception e)
+    private void ShowPendingMessage(string text)
     {
-        AppendLogText($"{message}: {e.Message}");
-        Debug.LogError($"{message}: {e}");
+        _pendingMessageId = System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        UpdateMessageDisplay(_pendingMessageId, $"[{userId}] {text}", "  -> Sending...");
     }
 
-    public static string GetDisplayName(VcBaseMessage message)
+    private static string GetDisplayName(VcBaseMessage message)
     {
-        if (message?.Sender == null) return string.Empty;
-
+        if (message?.Sender == null) return "Unknown";
         return string.IsNullOrEmpty(message.Sender.Nickname)
             ? message.Sender.UserId
             : message.Sender.Nickname;
     }
 
-    // MARK: Helper Methods
+    #endregion
 
-    private static string GetDomainForEnvironment(Environment env) => env switch
+    #region Logging
+
+    private void LogInfo(string message)
     {
-        Environment.PROD => "gamania.chat",
-        Environment.DEV => "dev.gim.beango.com",
-        Environment.STG => "stg.gim.beango.com",
-        Environment.TEST => "test.gim.beango.com",
-        _ => "gamania.chat"
-    };
-
-    private static string GetAppIdForEnvironment(Environment env, string customAppId)
-    {
-        if (!string.IsNullOrEmpty(customAppId))
-            return customAppId;
-
-        return env switch
-        {
-            Environment.PROD => "adb53e88-4c35-469a-a888-9e49ef1641b2",
-            Environment.DEV => "b553fe2f-4975-4d22-934f-f4aa02167e19",
-            Environment.STG => "9c839b9c-0be9-4e98-be4c-1f06345bdb7d",
-            Environment.TEST => "1ba5d5e3-73ab-4b47-9b1d-ca1ce967fac2",
-            _ => "adb53e88-4c35-469a-a888-9e49ef1641b2"
-        };
+        var formatted = $"[Demo] {message}";
+        Debug.Log(formatted);
+        AppendToLog(formatted);
     }
 
-    private void AppendLogText(string message)
+    private void LogError(string message)
     {
-        try
+        var formatted = $"[Demo] ERROR: {message}";
+        Debug.LogError(formatted);
+        AppendToLog(formatted);
+    }
+
+    private void LogSeparator()
+    {
+        AppendToLog("────────────────────────────────");
+    }
+
+    private void AppendToLog(string text)
+    {
+        if (logText != null)
         {
-            Debug.Log(message);
-            if (logText != null)
-            {
-                logText.text += message + "\n";
-                ScrollToBottom();
-            }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"Log error: {e}");
+            logText.text += text + "\n";
+            ScrollToBottom();
         }
     }
 
-    private readonly Dictionary<long, string> _messageCache = new();
-
-    private void AddOrUpdateMessage(long messageId, string message)
+    private void UpdateMessageDisplay(long messageId, string message, string meta1 = null, string meta2 = null)
     {
-        try
-        {
-            _messageCache[messageId] = message;
+        _messageCache[messageId] = (message, meta1, meta2);
 
-            if (logText != null)
-            {
-                logText.text = string.Join("\n", _messageCache.Values);
-                ScrollToBottom();
-            }
-        }
-        catch (System.Exception e)
+        if (logText == null) return;
+
+        var lines = new List<string>();
+        foreach (var entry in _messageCache.Values)
         {
-            Debug.LogError($"Log error: {e}");
+            lines.Add(entry.message);
+            if (!string.IsNullOrEmpty(entry.meta1))
+                lines.Add(entry.meta1);
+            if (!string.IsNullOrEmpty(entry.meta2))
+                lines.Add(entry.meta2);
         }
+
+        logText.text = string.Join("\n", lines);
+        ScrollToBottom();
     }
 
     private void ScrollToBottom()
@@ -325,4 +401,36 @@ public class ChatDemoController : MonoBehaviour
         scrollRect.verticalNormalizedPosition = 0f;
     }
 
+    #endregion
+
+    #region Environment Configuration
+
+    public enum Environment { PROD, DEV, STG, TEST }
+
+    private (string domain, string appId) GetEnvironmentConfig()
+    {
+        var domain = environment switch
+        {
+            Environment.PROD => "gamania.chat",
+            Environment.DEV => "dev.gim.beango.com",
+            Environment.STG => "stg.gim.beango.com",
+            Environment.TEST => "test.gim.beango.com",
+            _ => "gamania.chat"
+        };
+
+        var resolvedAppId = string.IsNullOrEmpty(appId) ? GetDefaultAppId() : appId;
+
+        return (domain, resolvedAppId);
+    }
+
+    private string GetDefaultAppId() => environment switch
+    {
+        Environment.PROD => "adb53e88-4c35-469a-a888-9e49ef1641b2",
+        Environment.DEV => "b553fe2f-4975-4d22-934f-f4aa02167e19",
+        Environment.STG => "9c839b9c-0be9-4e98-be4c-1f06345bdb7d",
+        Environment.TEST => "1ba5d5e3-73ab-4b47-9b1d-ca1ce967fac2",
+        _ => "adb53e88-4c35-469a-a888-9e49ef1641b2"
+    };
+
+    #endregion
 }
