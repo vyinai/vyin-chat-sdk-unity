@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.TestTools;
 
-namespace VyinChatSdk.Tests.Editor
+namespace VyinChatSdk.Tests
 {
     /// <summary>
     /// Helper for common LogAssert patterns in tests.

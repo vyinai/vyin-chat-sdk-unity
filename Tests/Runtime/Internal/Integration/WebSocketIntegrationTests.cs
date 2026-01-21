@@ -243,6 +243,8 @@ namespace VyinChatSdk.Tests.Runtime.Internal.Integration
             client.OnError += _ => gotError = true;
             client.OnAuthenticated += _ => authenticated = true;
 
+            LogAssert.Expect(LogType.Error, new Regex(@".*\[WebSocket\].*"));
+
             client.Connect(invalidConfig);
 
             float elapsed = 0f;
@@ -302,6 +304,8 @@ namespace VyinChatSdk.Tests.Runtime.Internal.Integration
 
             client.OnError += _ => gotError = true;
             client.OnAuthenticated += _ => authenticated = true;
+
+            LogAssert.Expect(LogType.Error, new Regex(@".*\[WebSocket\].*"));
 
             var invalidTokenConfig = new WebSocketConfig
             {
