@@ -98,24 +98,25 @@ namespace VyinChatSdk
         ErrBlockAndInvitedNotAllowed = 307017,
         ErrMessageRateLimitExceeded = 307018,
 
-        // Application Errors (638xxx)
+        // Application & Bot Errors (638xxx, 645xxx)
         ErrInvalidValueBotProfileLanguage = 638000,
         ErrInvalidAppID = 638001,
         ErrUserNotFound = 638002,
         ErrApplicationNotFound = 638003,
         ErrAPPPermissionDeny = 638004,
         ErrUserNotLoggedIn = 638005,
-
-        // Organization & Member Errors (730xxx)
-        ErrOrgInDowngradeCoolingOffPeriod = 730000,
-        ErrOrgInUnsubscribeCoolingOffPeriod = 730001,
-        ErrOrgNoCurrentSubscription = 730002,
-        ErrOrgNotFound = 730003,
-        ErrOrgExceedsLimit = 730004,
-        ErrUserNotOrgMember = 730005,
-        ErrNotSelectRolePermission = 730006,
-        ErrOrgNotAwsBindable = 730007,
-        ErrOrgMemberInvitationNotFound = 730008,
+        ErrBotKnowledgeCategoryExisted = 645000,
+        ErrInvalidBotKnowledgeCategory = 645001,
+        ErrBotEngineProtocolKnowledgeSourceNotSupported = 645002,
+        ErrDuplicateRecord = 645003,
+        Err3rdPartyServiceError = 645004,
+        Err3rdPartyServiceErrorUnknownEvent = 645005,
+        ErrContextCancelled = 645006,
+        Err3rdPartyServiceErrorContextDeadlineExceeded = 645007,
+        ErrBotEnginePreconditionFailed = 645008,
+        ErrBotIsInUse = 645009,
+        ErrSourceExist = 645010,
+        ErrDataSourceInvalid = 645011,
 
         // Push Provider (348xxx)
         ErrInvalidAPNSConfig = 348000,
