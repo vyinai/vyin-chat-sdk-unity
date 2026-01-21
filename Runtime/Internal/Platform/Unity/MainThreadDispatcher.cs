@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using UnityEngine;
-using Logger = VyinChatSdk.Internal.Domain.Log.Logger;
 
 namespace VyinChatSdk.Internal.Platform
 {
@@ -14,48 +13,145 @@ namespace VyinChatSdk.Internal.Platform
     /// </summary>
     internal class MainThreadDispatcher : MonoBehaviour
     {
+        // Singleton instance
         private static MainThreadDispatcher _instance;
+
+        // Queues and callbacks
         private static readonly Queue<Action> _executionQueue = new Queue<Action>();
         private static readonly List<Action> _updateCallbacks = new List<Action>();
+
+        // Thread safety
         private static readonly object _lock = new object();
         private static int? _mainThreadId;
+
+        // Runtime flags
         private static bool? _isTestEnvironment;
+        private static bool _isQuitting;
+
+        #region Initialization
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
         {
+            // Force singleton creation at startup
             var _ = Instance;
         }
 
         static MainThreadDispatcher()
         {
-            Logger.SetInstance(Unity.UnityLoggerImpl.Instance);
+            // Register cleanup handlers
             Application.quitting += OnApplicationQuit;
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+#endif
         }
+
+        #endregion
+
+        #region Editor Cleanup
+
+#if UNITY_EDITOR
+        private static void OnPlayModeStateChanged(UnityEditor.PlayModeStateChange state)
+        {
+            if (state == UnityEditor.PlayModeStateChange.ExitingPlayMode)
+            {
+                // Clean up before exiting play mode to avoid "objects not cleaned up" warning
+                CleanupInstance();
+            }
+            else if (state == UnityEditor.PlayModeStateChange.EnteredEditMode)
+            {
+                // Reset quitting flag when returning to edit mode (after cleanup)
+                _isQuitting = false;
+            }
+            else if (state == UnityEditor.PlayModeStateChange.EnteredPlayMode)
+            {
+                // Ensure quitting flag is reset when entering play mode
+                _isQuitting = false;
+            }
+        }
+
+        private static void CleanupInstance()
+        {
+            // Set quitting flag to prevent re-initialization during cleanup
+            _isQuitting = true;
+
+            // Clear queues and reset state
+            ClearQueuesAndResetState();
+
+            // Destroy the GameObject instance
+            if (_instance != null)
+            {
+                var instance = _instance;
+                _instance = null;
+
+                if (instance != null && instance.gameObject != null)
+                {
+                    // Use appropriate destroy method based on play mode state
+                    if (Application.isPlaying)
+                    {
+                        Destroy(instance.gameObject);
+                    }
+                    else
+                    {
+                        DestroyImmediate(instance.gameObject);
+                    }
+                }
+            }
+        }
+#endif
+
+        /// <summary>
+        /// Clear queues and reset static state
+        /// </summary>
+        private static void ClearQueuesAndResetState()
+        {
+            lock (_lock)
+            {
+                _executionQueue.Clear();
+                _updateCallbacks.Clear();
+            }
+
+            _mainThreadId = null;
+            _isTestEnvironment = null;
+        }
+
+        #endregion
+
+        #region Singleton
 
         public static MainThreadDispatcher Instance
         {
             get
             {
+                // Don't create new instance when application is quitting
+                if (_isQuitting)
+                {
+                    return null;
+                }
+
                 if (_instance == null)
                 {
                     lock (_lock)
                     {
+                        // Double-check pattern for thread safety
+                        if (_isQuitting)
+                        {
+                            return null;
+                        }
+
                         if (_instance == null)
                         {
                             var go = new GameObject("VyinChatMainThreadDispatcher");
                             _instance = go.AddComponent<MainThreadDispatcher>();
 
-                            // Capture main thread ID when instance is created on main thread
+                            // Capture main thread ID for later thread detection
                             _mainThreadId = Thread.CurrentThread.ManagedThreadId;
 
-                            // DontDestroyOnLoad only works in PlayMode
+                            // Persist across scene loads in play mode
                             if (Application.isPlaying)
                             {
                                 DontDestroyOnLoad(go);
                             }
-
-                            Logger.Debug(message: "MainThreadDispatcher initialized");
                         }
                     }
                 }
@@ -63,23 +159,28 @@ namespace VyinChatSdk.Internal.Platform
             }
         }
 
+        #endregion
+
+        #region Lifecycle Events
+
         private static void OnApplicationQuit()
         {
+            // Set quitting flag to prevent new operations
+            _isQuitting = true;
+
+            // Clear queues and reset state
+            ClearQueuesAndResetState();
+
+            // Reset instance reference (GameObject cleanup handled by Unity)
             _instance = null;
         }
 
         void OnDestroy()
         {
-            lock (_lock)
-            {
-                _executionQueue.Clear();
-                _updateCallbacks.Clear();
-            }
             if (_instance == this)
             {
+                ClearQueuesAndResetState();
                 _instance = null;
-                _mainThreadId = null;
-                _isTestEnvironment = null;
             }
         }
 
@@ -119,9 +220,12 @@ namespace VyinChatSdk.Internal.Platform
             }
         }
 
+        #endregion
+
+        #region Core Methods
+
         /// <summary>
         /// Execute action with exception handling
-        /// Uses Logger if available, falls back to Debug.LogError
         /// </summary>
         private static void ExecuteActionSafely(Action action, string actionType)
         {
@@ -131,15 +235,7 @@ namespace VyinChatSdk.Internal.Platform
             }
             catch (Exception e)
             {
-                try
-                {
-                    Logger.Error(message: $"MainThreadDispatcher error executing {actionType}: {e}", exception: e);
-                }
-                catch
-                {
-                    // Fallback to Unity Debug.LogError if Logger is not initialized
-                    UnityEngine.Debug.LogError($"MainThreadDispatcher error executing {actionType}: {e}");
-                }
+                Debug.LogError($"[VyinChat] MainThreadDispatcher error executing {actionType}: {e}");
             }
         }
 
@@ -148,7 +244,7 @@ namespace VyinChatSdk.Internal.Platform
         /// </summary>
         public static void Enqueue(Action action)
         {
-            if (action == null) return;
+            if (action == null || _isQuitting) return;
 
             // Check if we're on the main thread by comparing thread IDs
             // This avoids calling Application.isPlaying from background threads
@@ -201,8 +297,8 @@ namespace VyinChatSdk.Internal.Platform
         }
 
         /// <summary>
-        /// Execute action with fallback to Debug.LogError if Logger is not available
-        /// Used in EditMode where Logger might not be initialized
+        /// Execute action with fallback logging
+        /// Used in EditMode where there is no Update() cycle
         /// </summary>
         private static void ExecuteActionWithFallbackLogging(Action action)
         {
@@ -212,7 +308,7 @@ namespace VyinChatSdk.Internal.Platform
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.LogError($"MainThreadDispatcher error executing action: {e}");
+                Debug.LogError($"[VyinChat] MainThreadDispatcher error executing action: {e}");
             }
         }
 
@@ -222,7 +318,7 @@ namespace VyinChatSdk.Internal.Platform
         /// </summary>
         public static void RegisterUpdateCallback(Action callback)
         {
-            if (callback == null) return;
+            if (callback == null || _isQuitting) return;
 
             var _ = Instance;
 
@@ -248,6 +344,10 @@ namespace VyinChatSdk.Internal.Platform
             }
         }
 
+        #endregion
+
+        #region Testing Support
+
 #if UNITY_INCLUDE_TESTS
         /// <summary>
         /// Clear all pending actions in the queue (for testing purposes only)
@@ -261,5 +361,7 @@ namespace VyinChatSdk.Internal.Platform
             }
         }
 #endif
+
+        #endregion
     }
 }
