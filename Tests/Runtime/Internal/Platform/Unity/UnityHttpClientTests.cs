@@ -108,6 +108,10 @@ namespace VyinChatSdk.Tests.Runtime.Internal.Platform.Unity
                 $"Response should show Session-Key header was sent. Response body: {response.Body}");
             Assert.IsTrue(response.Body.Contains(TestSessionKey),
                 $"Response should show session key value was sent. Response body: {response.Body}");
+            Assert.IsTrue(bodyLower.Contains("api-version"),
+                $"Response should show API-Version header was sent. Response body: {response.Body}");
+            Assert.IsTrue(response.Body.Contains(ApiVersionConfig.DefaultVersion),
+                $"Response should show API-Version value was sent. Response body: {response.Body}");
         }
 
         [UnityTest]
@@ -132,6 +136,10 @@ namespace VyinChatSdk.Tests.Runtime.Internal.Platform.Unity
                 $"Session-Key header should be present. Response body: {response.Body}");
             Assert.IsTrue(response.Body.Contains(TestSessionKey),
                 $"Session key value should match. Response body: {response.Body}");
+            Assert.IsTrue(bodyLower.Contains("api-version"),
+                $"API-Version header should be present. Response body: {response.Body}");
+            Assert.IsTrue(response.Body.Contains(ApiVersionConfig.DefaultVersion),
+                $"API-Version value should match. Response body: {response.Body}");
         }
 
         #endregion

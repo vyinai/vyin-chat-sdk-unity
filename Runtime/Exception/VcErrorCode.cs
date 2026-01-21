@@ -1,55 +1,17 @@
 namespace VyinChatSdk
 {
     /// <summary>
-    /// Error codes for VyinChat SDK
+    /// Error codes for VyinChat SDK (v1 Specification)
     /// </summary>
     public enum VcErrorCode
     {
-        // Invalid Parameter Errors (400100-400199)
-        InvalidParameterValueString = 400100,
-        InvalidParameterValueNumber = 400101,
-        InvalidParameterValueList = 400102,
-        InvalidParameterValueJson = 400103,
-        InvalidParameterValueBoolean = 400104,
-        InvalidParameterValueRequired = 400105,
-        InvalidParameterValuePositive = 400106,
-        InvalidParameterValueNegative = 400107,
-        NonAuthorized = 400108,
-        TokenExpired = 400109,
-        InvalidLength = 400110,
-        InvalidParameterValue = 400111,
-        UnusableCharacterIncluded = 400151,
-
-        // Database Errors (400200-400299)
-        NotFoundInDatabase = 400201,
-        DuplicatedData = 400202,
-        MaxItemExceeded = 400203,
-
-        // User & Session Errors (400300-400399)
-        UserDeactivated = 400300,
-        UserNotExist = 400301,
-        InvalidAccessToken = 400302,
-        InvalidSessionKey = 400303,
-        ApplicationNotFound = 400304,
-        SessionKeyExpired = 400309,
-        SessionTokenRevoked = 400310,
-
-        // Request Errors (400400-400499)
-        InvalidJsonRequestBody = 400403,
-        InvalidRequestUrl = 400404,
-
-        // Channel Errors (400900-400999)
-        ChannelUserLimit = 400901,
-
-        // Server Errors (500000-599999)
-        InternalServerError = 500901,
-
-        // Client SDK Errors (800000-899999)
-        Unknown = 800000,
+        // SDK Internal & Network (8xxxxx)
+        UnknownError = 800000,
         InvalidInitialization = 800100,
         ConnectionRequired = 800101,
         ConnectionCanceled = 800102,
         InvalidParameter = 800110,
+        NotSupported = 800111,
         NetworkError = 800120,
         NetworkRoutingError = 800121,
         MalformedData = 800130,
@@ -66,21 +28,101 @@ namespace VyinChatSdk
         FileUploadCanceled = 800240,
         FileUploadTimeout = 800250,
         FileSizeLimitExceeded = 800260,
-        Pending = 800400,
-        ParsedInvalidAccessToken = 800500,
+        TimerWasExpired = 800301,
+        TimerWasAlreadyDone = 800302,
+        PendingError = 800400,
+        PassedInvalidAccessToken = 800500,
         SessionKeyRefreshSucceeded = 800501,
         SessionKeyRefreshFailed = 800502,
         CollectionDisposed = 800600,
-        DatabaseError = 800700,
-        InvalidJson = 800800,
+        LocalDatabaseError = 800700,
 
-        // Authorization Errors (900000-900999)
-        InvalidAuthority = 900100,
-        NotAMember = 900020,
-        NotOperator = 900800,
-        ChannelNotFound = 900500,
+        // Common Errors (400xxx - 500xxx)
+        ErrBadRequest = 400000,
+        ErrInvalidArgument = 400001,
+        ErrUnexpectedParameterTypeNumber = 400002,
+        ErrUnauthorized = 400003,
+        ErrInputExceedLimit = 400004,
+        ErrInvalidValue = 400005,
+        ErrNotFoundInDatabase = 400006,
+        ErrResourceAlreadyExists = 400007,
+        ErrInvalidSessionKeyValue = 400008,
+        ErrInvalidAPIToken = 400009,
+        ErrJSONParser = 400010,
+        ErrParameterDecode = 400011,
+        ErrInvalidSession = 401000,
+        ErrAPPUnauthorized = 401001,
+        ErrHttpUnauthorized = 401002,
+        ErrForbidden = 403000,
+        ErrIPIsNotAllowed = 403001,
+        ErrDomainIsNotAllowed = 403002,
+        ErrNotFound = 404000,
+        ErrRouterNotFound = 404001,
+        ErrFileNotFound = 404002,
+        ErrPreconditionFailed = 412000,
+        ErrServerBusy = 429000,
+        ErrInternal = 500000,
+        ErrDatabase = 500001,
+        ErrOtherService = 500002,
+        ErrMarshalFailed = 500003,
+        ErrHttpRequestTimeout = 500004,
 
-        // Application Errors (100000-199999)
-        InvalidApplicationId = 107101
+        // Channel Errors (279xxx)
+        ErrChannelFreeze = 279000,
+        ErrInvitationNotFound = 279001,
+        ErrDeactivatedUserNotAccessible = 279002,
+        ErrMemIsDeactivated = 279003,
+        ErrChannelNotFound = 279004,
+        ErrChannelUserLimit = 279005,
+        ErrInvalidEventName = 279006,
+        ErrInvalidChannelURLFormat = 279007,
+
+        // Message Errors (307xxx)
+        ErrNotAnOwner = 307000,
+        ErrSendNotAllowed = 307001,
+        ErrUserIsMuted = 307002,
+        ErrFileIsNotReady = 307003,
+        ErrMessageNotFound = 307004,
+        ErrMetaSendOutsideAllowedWindow = 307005,
+        ErrPollNotFound = 307006,
+        ErrPollOptionNotFound = 307007,
+        ErrMultipleVotePollNotFound = 307008,
+        ErrPollAlreadyExistsForMessage = 307009,
+        ErrPollNotLinkedToMessage = 307010,
+        ErrPollNotOpen = 307011,
+        ErrPollHasClosedOrRemoved = 307012,
+        ErrBlockProfanityMessage = 307013,
+        ErrDomainFilter = 307014,
+        ErrOptionsExceedMax = 307015,
+        ErrInBlockRelation = 307016,
+        ErrBlockAndInvitedNotAllowed = 307017,
+        ErrMessageRateLimitExceeded = 307018,
+
+        // Application & Bot Errors (638xxx, 645xxx)
+        ErrInvalidValueBotProfileLanguage = 638000,
+        ErrInvalidAppID = 638001,
+        ErrUserNotFound = 638002,
+        ErrApplicationNotFound = 638003,
+        ErrAPPPermissionDeny = 638004,
+        ErrUserNotLoggedIn = 638005,
+        ErrBotKnowledgeCategoryExisted = 645000,
+        ErrInvalidBotKnowledgeCategory = 645001,
+        ErrBotEngineProtocolKnowledgeSourceNotSupported = 645002,
+        ErrDuplicateRecord = 645003,
+        Err3rdPartyServiceError = 645004,
+        Err3rdPartyServiceErrorUnknownEvent = 645005,
+        ErrContextCancelled = 645006,
+        Err3rdPartyServiceErrorContextDeadlineExceeded = 645007,
+        ErrBotEnginePreconditionFailed = 645008,
+        ErrBotIsInUse = 645009,
+        ErrSourceExist = 645010,
+        ErrDataSourceInvalid = 645011,
+
+        // Push Provider (348xxx)
+        ErrInvalidAPNSConfig = 348000,
+        ErrInvalidFCMConfig = 348001,
+
+        // Search (126xxx)
+        ErrOpenSearchPingFailed = 126000
     }
 }

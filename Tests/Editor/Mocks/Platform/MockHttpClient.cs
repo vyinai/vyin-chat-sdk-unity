@@ -99,6 +99,8 @@ namespace VyinChatSdk.Tests.Mocks.Platform
         {
             var result = new Dictionary<string, string>();
 
+            result[ApiVersionConfig.HeaderName] = ApiVersionConfig.DefaultVersion;
+
             // Add session key if set
             if (!string.IsNullOrEmpty(_sessionKey))
             {

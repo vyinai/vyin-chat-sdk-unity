@@ -51,7 +51,7 @@ namespace VyinChatSdk.Internal.Domain.UseCases
             {
                 var channelBo = await _channelRepository.CreateChannelAsync(createParams, cancellationToken)
                 ?? throw new VcException(
-                        VcErrorCode.Unknown,
+                        VcErrorCode.UnknownError,
                         "Failed to create channel - repository returned null");
 
                 // Convert BO to Public Model
@@ -66,7 +66,7 @@ namespace VyinChatSdk.Internal.Domain.UseCases
             {
                 // Wrap other exceptions in VcException
                 throw new VcException(
-                    VcErrorCode.Unknown,
+                    VcErrorCode.UnknownError,
                     "Failed to create channel",
                     ex);
             }

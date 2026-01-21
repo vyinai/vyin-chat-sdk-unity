@@ -30,6 +30,8 @@ namespace VyinChatSdk.Tests.Editor.Internal.Data.Network
             Assert.IsTrue(url.StartsWith("wss://adb53e88-4c35-469a-a888-9e49ef1641b2.gamania.chat/ws?"));
             Assert.IsTrue(url.Contains("user_id=test_user_123"));
             Assert.IsTrue(url.Contains("access_token=test_token_456"));
+            Assert.IsTrue(url.Contains("m=Chat"), "Should include SDK module parameter");
+            Assert.IsTrue(url.Contains($"api-version={ApiVersionConfig.DefaultVersion}"));
         }
 
         [Test]
@@ -64,6 +66,8 @@ namespace VyinChatSdk.Tests.Editor.Internal.Data.Network
             Assert.IsTrue(url.StartsWith("wss://test-app-id.gamania.chat/ws?"));
             Assert.IsTrue(url.Contains("user_id=test_user"));
             Assert.IsFalse(url.Contains("access_token"));
+            Assert.IsTrue(url.Contains("m=Chat"), "Should include SDK module parameter");
+            Assert.IsTrue(url.Contains($"api-version={ApiVersionConfig.DefaultVersion}"));
         }
 
         [Test]

@@ -45,7 +45,7 @@ namespace VyinChatSdk.Internal.Domain.UseCases
                 if (channelBo == null)
                 {
                     throw new VcException(
-                        VcErrorCode.ChannelNotFound,
+                        VcErrorCode.ErrChannelNotFound,
                         $"Channel not found: {channelUrl}",
                         channelUrl);
                 }
@@ -59,7 +59,7 @@ namespace VyinChatSdk.Internal.Domain.UseCases
             catch (Exception ex)
             {
                 throw new VcException(
-                    VcErrorCode.Unknown,
+                    VcErrorCode.UnknownError,
                     "Failed to get channel",
                     channelUrl,
                     ex);

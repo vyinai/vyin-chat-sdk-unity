@@ -157,7 +157,7 @@ namespace VyinChatSdk.Tests.Runtime.Internal.Domain.Commands
             public event Action OnConnected { add { } remove { } }
             public event Action OnDisconnected { add { } remove { } }
             public event Action<CommandType, string> OnCommandReceived;
-            public event Action<string> OnError { add { } remove { } }
+            public event Action<VcException> OnError { add { } remove { } }
             public event Action<string> OnAuthenticated { add { } remove { } }
 
             public bool IsConnected => true;

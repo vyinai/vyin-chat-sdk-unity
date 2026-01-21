@@ -1,5 +1,6 @@
 using System;
 using System.Text.RegularExpressions;
+using VyinChatSdk;
 using VyinChatSdk.Internal.Domain.Log;
 
 namespace VyinChatSdk.Internal.Platform.Unity
@@ -130,7 +131,11 @@ namespace VyinChatSdk.Internal.Platform.Unity
 
             // Format message
             var formattedMessage = $"[{tag}] {message}";
-            if (exception != null)
+            if (exception is VcException vcEx)
+            {
+                formattedMessage += $" | VcException({vcEx.Code}): {vcEx.Message}";
+            }
+            else if (exception != null)
             {
                 formattedMessage += $" | Exception: {exception.Message}";
             }

@@ -199,15 +199,7 @@ namespace VyinChatSdk.Internal.Data.Repositories
         
         private VcException CreateExceptionFromResponse(HttpResponse response)
         {
-            return response.StatusCode switch
-            {
-                400 => new VcException(VcErrorCode.InvalidParameterValue, "Invalid request parameters", response.Body),
-                401 => new VcException(VcErrorCode.InvalidSessionKey, "Invalid or missing session key", response.Body),
-                403 => new VcException(VcErrorCode.InvalidSessionKey, "Invalid session key", response.Body),
-                404 => new VcException(VcErrorCode.ChannelNotFound, "Channel not found", response.Body),
-                500 => new VcException(VcErrorCode.InternalServerError, "Internal server error", response.Body),
-                _ => new VcException(VcErrorCode.NetworkError, $"HTTP {response.StatusCode}: {response.Error}", response.Body)
-            };
+            return VcException.FromHttpResponse(response);
         }
 
         private string BuildChannelUrl(string channelUrl)

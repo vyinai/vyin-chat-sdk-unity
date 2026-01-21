@@ -64,7 +64,7 @@ namespace VyinChatSdk.Tests.Runtime.Message
             // Send Message
             string testMessage = $"E2E Test at {DateTime.UtcNow:HH:mm:ss}";
             VcBaseMessage sentMessage = null;
-            string sendError = null;
+            VcException sendError = null;
             bool sendCompleted = false;
 
             var channel = new VcGroupChannel { ChannelUrl = TestChannelUrl };
@@ -81,7 +81,7 @@ namespace VyinChatSdk.Tests.Runtime.Message
 
             // Verify Send (ACK)
             Assert.IsTrue(sendCompleted, "Send callback should be called");
-            Assert.IsNull(sendError, $"Send should succeed: {sendError}");
+            Assert.IsNull(sendError, $"Send should succeed: {sendError?.Message}");
             Assert.IsNotNull(sentMessage, "Sent message should not be null");
             Assert.AreEqual(testMessage, sentMessage.Message);
             Assert.AreEqual(TestChannelUrl, sentMessage.ChannelUrl);

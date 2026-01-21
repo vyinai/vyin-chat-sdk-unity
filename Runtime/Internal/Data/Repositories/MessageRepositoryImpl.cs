@@ -66,7 +66,7 @@ namespace VyinChatSdk.Internal.Data.Repositories
             }
             catch (Exception ex)
             {
-                throw new VcException(VcErrorCode.Unknown, $"SendMessage error: {ex.Message}", ex);
+                throw new VcException(VcErrorCode.UnknownError, $"SendMessage error: {ex.Message}", ex);
             }
         }
 

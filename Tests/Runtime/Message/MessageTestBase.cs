@@ -85,7 +85,7 @@ namespace VyinChatSdk.Tests.Runtime.Message
 
             // Step 2: Connect
             VcUser connectedUser = null;
-            string connectionError = null;
+            VcException connectionError = null;
             bool connected = false;
 
             VyinChat.Connect(TEST_USER_ID, null, (user, error) =>
@@ -103,12 +103,12 @@ namespace VyinChatSdk.Tests.Runtime.Message
             }
 
             Assert.IsTrue(connected, $"Should connect within {CONNECTION_TIMEOUT}s");
-            Assert.IsNull(connectionError, $"Connection should succeed without error: {connectionError}");
+            Assert.IsNull(connectionError, $"Connection should succeed without error: {connectionError?.Message}");
             Assert.IsNotNull(connectedUser, "Connected user should not be null");
 
             // Step 3: Create Channel
             VcGroupChannel createdChannel = null;
-            string channelError = null;
+            VcException channelError = null;
             bool channelCreated = false;
 
             var channelParams = new VcGroupChannelCreateParams
@@ -133,7 +133,7 @@ namespace VyinChatSdk.Tests.Runtime.Message
             }
 
             Assert.IsTrue(channelCreated, $"Should create channel within {CHANNEL_CREATE_TIMEOUT}s");
-            Assert.IsNull(channelError, $"Channel creation should succeed without error: {channelError}");
+            Assert.IsNull(channelError, $"Channel creation should succeed without error: {channelError?.Message}");
             Assert.IsNotNull(createdChannel, "Created channel should not be null");
             Assert.IsFalse(string.IsNullOrEmpty(createdChannel.ChannelUrl), "ChannelUrl should not be empty");
 
@@ -155,7 +155,7 @@ namespace VyinChatSdk.Tests.Runtime.Message
 
             // Step 2: Connect
             VcUser connectedUser = null;
-            string connectionError = null;
+            VcException connectionError = null;
             bool connected = false;
 
             VyinChat.Connect(TEST_USER_ID, null, (user, error) =>
@@ -173,7 +173,7 @@ namespace VyinChatSdk.Tests.Runtime.Message
             }
 
             Assert.IsTrue(connected, $"Should connect within {CONNECTION_TIMEOUT}s");
-            Assert.IsNull(connectionError, $"Connection should succeed without error: {connectionError}");
+            Assert.IsNull(connectionError, $"Connection should succeed without error: {connectionError?.Message}");
             Assert.IsNotNull(connectedUser, "Connected user should not be null");
         }
 

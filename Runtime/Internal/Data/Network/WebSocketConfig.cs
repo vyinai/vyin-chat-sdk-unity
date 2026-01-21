@@ -6,6 +6,7 @@
 // -----------------------------------------------------------------------------
 
 using System;
+using VyinChatSdk;
 
 namespace VyinChatSdk.Internal.Data.Network
 {
@@ -49,7 +50,17 @@ namespace VyinChatSdk.Internal.Data.Network
         /// <summary>
         /// SDK version
         /// </summary>
-        public string SdkVersion { get; set; } = "0.1.0";
+        public string SdkVersion { get; set; } = SdkInfo.Version;
+
+        /// <summary>
+        /// SDK module (e.g., "Chat")
+        /// </summary>
+        public string SdkModule { get; set; } = SdkInfo.Module;
+
+        /// <summary>
+        /// API version for error code compatibility
+        /// </summary>
+        public string ApiVersion { get; set; } = ApiVersionConfig.DefaultVersion;
 
         /// <summary>
         /// Platform version (e.g., Unity version)
@@ -101,6 +112,7 @@ namespace VyinChatSdk.Internal.Data.Network
                 $"p=Unity",  // Platform
                 $"pv={Uri.EscapeDataString(PlatformVersion ?? "Unknown")}",  // Platform version
                 $"sv={Uri.EscapeDataString(SdkVersion)}",  // SDK version
+                $"m={Uri.EscapeDataString(SdkModule)}",  // SDK module
                 $"ai={Uri.EscapeDataString(ApplicationId)}",  // Application ID
                 $"user_id={Uri.EscapeDataString(UserId)}"  // User ID
             };
@@ -115,6 +127,11 @@ namespace VyinChatSdk.Internal.Data.Network
             if (!string.IsNullOrEmpty(AppVersion))
             {
                 queryParams.Add($"av={Uri.EscapeDataString(AppVersion)}");
+            }
+
+            if (!string.IsNullOrEmpty(ApiVersion))
+            {
+                queryParams.Add($"{ApiVersionConfig.QueryParamName}={Uri.EscapeDataString(ApiVersion)}");
             }
 
             // Combine host + query string

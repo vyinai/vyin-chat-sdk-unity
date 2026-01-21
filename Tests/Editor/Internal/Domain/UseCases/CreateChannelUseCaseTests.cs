@@ -174,7 +174,7 @@ namespace VyinChatSdk.Tests.Editor.Internal.Domain.UseCases
                 _useCase.ExecuteAsync(createParams).GetAwaiter().GetResult();
             });
 
-            Assert.AreEqual(VcErrorCode.Unknown, ex.ErrorCode);
+            Assert.AreEqual(VcErrorCode.UnknownError, ex.ErrorCode);
             Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual(innerException, ex.InnerException);
         }
@@ -188,7 +188,7 @@ namespace VyinChatSdk.Tests.Editor.Internal.Domain.UseCases
                 Name = "Test Channel",
                 UserIds = new List<string> { "user1", "user2" }
             };
-            var vcException = new VcException(VcErrorCode.InvalidSessionKey, "Invalid session key");
+            var vcException = new VcException(VcErrorCode.ErrInvalidSession, "Invalid session key");
             _mockRepository.SetExceptionToThrow(vcException);
 
             // Act & Assert
@@ -197,7 +197,7 @@ namespace VyinChatSdk.Tests.Editor.Internal.Domain.UseCases
                 _useCase.ExecuteAsync(createParams).GetAwaiter().GetResult();
             });
 
-            Assert.AreEqual(VcErrorCode.InvalidSessionKey, ex.ErrorCode);
+            Assert.AreEqual(VcErrorCode.ErrInvalidSession, ex.ErrorCode);
             Assert.AreEqual(vcException, ex);
         }
 

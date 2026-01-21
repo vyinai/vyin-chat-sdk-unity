@@ -107,7 +107,7 @@ namespace VyinChatSdk.Tests.Editor.Internal.Domain.UseCases
                 _useCase.ExecuteAsync("non_existent_channel").GetAwaiter().GetResult();
             });
 
-            Assert.AreEqual(VcErrorCode.ChannelNotFound, ex.ErrorCode);
+            Assert.AreEqual(VcErrorCode.ErrChannelNotFound, ex.ErrorCode);
             Assert.That(ex.Message, Does.Contain("Channel not found"));
         }
 
@@ -128,7 +128,7 @@ namespace VyinChatSdk.Tests.Editor.Internal.Domain.UseCases
                 _useCase.ExecuteAsync("test_channel").GetAwaiter().GetResult();
             });
 
-            Assert.AreEqual(VcErrorCode.Unknown, ex.ErrorCode);
+            Assert.AreEqual(VcErrorCode.UnknownError, ex.ErrorCode);
             Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual(innerException, ex.InnerException);
         }

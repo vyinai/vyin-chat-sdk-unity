@@ -93,6 +93,8 @@ namespace VyinChatSdk.Internal.Platform.Unity.Network
             {
                 request.timeout = DefaultTimeoutSeconds;
 
+                request.SetRequestHeader(ApiVersionConfig.HeaderName, ApiVersionConfig.DefaultVersion);
+
                 if (!string.IsNullOrEmpty(_sessionKey))
                 {
                     request.SetRequestHeader(SessionKeyHeader, _sessionKey);
