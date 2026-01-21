@@ -221,7 +221,10 @@ namespace VyinChatSdk.Internal.Platform.Unity.Network
                 OnDisconnected?.Invoke();
                 if (closeCode != WebSocketCloseCode.Normal && closeCode != WebSocketCloseCode.Away)
                 {
-                    OnError?.Invoke(VcException.FromWebSocketCloseCode((ushort)closeCode));
+                    var errorCode = closeCode == WebSocketCloseCode.Abnormal
+                        ? VcErrorCode.WebSocketConnectionFailed
+                        : VcErrorCode.WebSocketConnectionClosed;
+                    OnError?.Invoke(new VcException(errorCode, $"WebSocket closed with code: {(ushort)closeCode}"));
                 }
             });
         }

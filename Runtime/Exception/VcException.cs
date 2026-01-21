@@ -116,15 +116,6 @@ namespace VyinChatSdk
             return fallbackException;
         }
 
-        internal static VcException FromWebSocketCloseCode(ushort closeCode, string message = null)
-        {
-            var errorCode = ErrorCodeMapper.FromWebSocketCloseCode(closeCode);
-            var errorMessage = string.IsNullOrEmpty(message)
-                ? $"WebSocket closed with code: {closeCode}"
-                : message;
-            return new VcException(errorCode, errorMessage);
-        }
-
         private class ApiErrorDto
         {
             [JsonProperty("code")]

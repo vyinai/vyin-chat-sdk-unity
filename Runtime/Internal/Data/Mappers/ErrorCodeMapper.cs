@@ -38,20 +38,5 @@ namespace VyinChatSdk.Internal.Data.Mappers
                 _ => VcErrorCode.NetworkError             // Default fallback for other HTTP errors
             };
         }
-
-        /// <summary>
-        /// Maps WebSocket close code to VcErrorCode.
-        /// </summary>
-        public static VcErrorCode FromWebSocketCloseCode(ushort closeCode)
-        {
-            return closeCode switch
-            {
-                1000 => VcErrorCode.WebSocketConnectionClosed, // Normal Closure
-                1001 => VcErrorCode.WebSocketConnectionClosed, // Going Away
-                1006 => VcErrorCode.WebSocketConnectionFailed, // Abnormal Closure (no close frame)
-                1011 => VcErrorCode.ErrInternal,               // Internal Error
-                _ => VcErrorCode.UnknownError
-            };
-        }
     }
 }

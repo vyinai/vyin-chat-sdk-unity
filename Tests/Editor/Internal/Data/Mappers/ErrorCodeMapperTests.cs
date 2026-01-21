@@ -34,12 +34,5 @@ namespace VyinChatSdk.Tests.Editor.Internal.Data.Mappers
         {
             Assert.AreEqual(VcErrorCode.NetworkError, ErrorCodeMapper.FromHttpStatusFallback(418)); // I'm a teapot
         }
-
-        [Test]
-        public void FromWebSocketCloseCode_ShouldMapStandardCodes()
-        {
-            Assert.AreEqual(VcErrorCode.WebSocketConnectionClosed, ErrorCodeMapper.FromWebSocketCloseCode(1000));
-            Assert.AreEqual(VcErrorCode.WebSocketConnectionFailed, ErrorCodeMapper.FromWebSocketCloseCode(1006));
-        }
     }
 }
