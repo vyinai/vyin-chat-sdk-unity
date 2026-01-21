@@ -116,6 +116,42 @@ namespace VyinChatSdk
             return fallbackException;
         }
 
+        /// <summary>
+        /// Creates a VcException from WebSocket EROR command payload.
+        /// </summary>
+        internal static VcException FromWebSocketError(string payload)
+        {
+            if (!string.IsNullOrEmpty(payload))
+            {
+                try
+                {
+                    var errorDto = JsonConvert.DeserializeObject<ApiErrorDto>(payload);
+                    if (errorDto != null && errorDto.Code != 0)
+                    {
+                        var vcErrorCode = ErrorCodeMapper.FromApiCode(errorDto.Code);
+                        var message = !string.IsNullOrEmpty(errorDto.Message)
+                            ? errorDto.Message
+                            : $"WebSocket error code: {errorDto.Code}";
+
+                        var exception = new VcException(vcErrorCode, message, payload);
+                        Logger.Error(LogCategory.WebSocket,
+                            $"WebSocket EROR: apiCode={errorDto.Code}, vcCode={(int)vcErrorCode}",
+                            exception);
+                        return exception;
+                    }
+                }
+                catch
+                {
+                    // JSON parse failed; fall back to default
+                }
+            }
+
+            // Fallback for unparseable EROR
+            var fallbackException = new VcException(VcErrorCode.UnknownError, "WebSocket error received", payload);
+            Logger.Error(LogCategory.WebSocket, "WebSocket EROR (unparseable)", fallbackException);
+            return fallbackException;
+        }
+
         private class ApiErrorDto
         {
             [JsonProperty("code")]

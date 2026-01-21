@@ -383,11 +383,13 @@ namespace VyinChatSdk.Internal.Platform.Unity.Network
                 }
             }
 
-            // EROR without req_id or unknown req_id - treat as authentication error
+            // Parse error code and message from payload
+            var exception = VcException.FromWebSocketError(payload);
+
             CancelAuthTimeout();
             MainThreadDispatcher.Enqueue(() =>
             {
-                OnError?.Invoke(new VcException(VcErrorCode.ErrInvalidSession, "Authentication failed (EROR message)."));
+                OnError?.Invoke(exception);
                 OnCommandReceived?.Invoke(CommandType.EROR, payload);
             });
         }
