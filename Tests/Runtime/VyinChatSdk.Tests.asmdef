@@ -1,0 +1,12 @@
+{
+    "name": "VyinChatSdk.Tests",
+    "references": [
+        "VyinChatSdk",
+        "Newtonsoft.Json-for-Unity"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": []
+}

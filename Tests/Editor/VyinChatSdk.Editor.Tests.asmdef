@@ -1,0 +1,13 @@
+{
+    "name": "VyinChatSdk.Editor.Tests",
+    "references": [
+        "VyinChatSdk"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": []
+}
