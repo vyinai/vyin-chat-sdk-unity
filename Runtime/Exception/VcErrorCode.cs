@@ -98,25 +98,13 @@ namespace VyinChatSdk
         ErrBlockAndInvitedNotAllowed = 307017,
         ErrMessageRateLimitExceeded = 307018,
 
-        // Application & Bot Errors (638xxx, 645xxx)
+        // Application Errors (638xxx)
         ErrInvalidValueBotProfileLanguage = 638000,
         ErrInvalidAppID = 638001,
         ErrUserNotFound = 638002,
         ErrApplicationNotFound = 638003,
         ErrAPPPermissionDeny = 638004,
         ErrUserNotLoggedIn = 638005,
-        ErrBotKnowledgeCategoryExisted = 645000,
-        ErrInvalidBotKnowledgeCategory = 645001,
-        ErrBotEngineProtocolKnowledgeSourceNotSupported = 645002,
-        ErrDuplicateRecord = 645003,
-        Err3rdPartyServiceError = 645004,
-        Err3rdPartyServiceErrorUnknownEvent = 645005,
-        ErrContextCancelled = 645006,
-        Err3rdPartyServiceErrorContextDeadlineExceeded = 645007,
-        ErrBotEnginePreconditionFailed = 645008,
-        ErrBotIsInUse = 645009,
-        ErrSourceExist = 645010,
-        ErrDataSourceInvalid = 645011,
 
         // Organization & Member Errors (730xxx)
         ErrOrgInDowngradeCoolingOffPeriod = 730000,
@@ -128,95 +116,6 @@ namespace VyinChatSdk
         ErrNotSelectRolePermission = 730006,
         ErrOrgNotAwsBindable = 730007,
         ErrOrgMemberInvitationNotFound = 730008,
-
-        // Social Channels (914xxx)
-        ErrSocialAlreadyConnected = 914001,
-        ErrIntegrationExists = 914002,
-        ErrDiscordIntegrationNotFound = 914051,
-        ErrDiscordIntegrationInactive = 914052,
-        ErrDiscordBotTokenRequired = 914053,
-        ErrDiscordGuildChannelNotSupported = 914054,
-        ErrDiscordBotPermissionDenied = 914055,
-        ErrDiscordBotChannelPermissionDenied = 914056,
-        ErrDiscordInvalidState = 914057,
-        ErrDiscordStateExpired = 914058,
-        ErrDiscordTokenExchangeFailed = 914059,
-        ErrDiscordUserInfoFailed = 914060,
-        ErrDiscordUnauthorized = 914061,
-        ErrDiscordForbidden = 914062,
-        ErrDiscordNotFound = 914063,
-        ErrDiscordRateLimit = 914064,
-        ErrDiscordAPIError = 914065,
-        ErrDiscordFileTooLarge = 914066,
-        ErrDiscordDisconnectAuthFailed = 914067,
-        ErrDiscordDisconnectInactive = 914068,
-        ErrDiscordDisconnectNotFound = 914069,
-        ErrDiscordDisconnectUnauthorized = 914070,
-        ErrTelegramIntegrationExpired = 914101,
-        ErrTelegramFloodWait = 914102,
-        ErrZaloUnauthorized = 914151,
-        ErrZendeskConversationNotFound = 914201,
-
-        // Subscription Errors (357xxx)
-        ErrNotSupportFeatureGroup = 357000,
-        ErrAwsPaymentMethodExisted = 357001,
-        ErrNotAbleToCancelDowngradeRequest = 357002,
-        ErrNotAbleToCancelUnsubscribeRequest = 357003,
-        ErrUpcomingSubscriptionNotActive = 357004,
-        ErrForbiddenFeatureGroupPermission = 357005,
-        ErrForbiddenOutOfQuota = 357006,
-        ErrNameRequired = 357007,
-        ErrEmailInvalid = 357008,
-        ErrPhoneInvalid = 357009,
-        ErrAwsResolveCustomerFailed = 357010,
-        ErrMaximumQuotaUploadSource = 357011,
-        ErrVideoCallMaximumParticipant = 357012,
-        ErrAudioCallMaximumParticipant = 357013,
-        ErrQuotaUploadTrafficExceeded = 357014,
-        ErrQuotaFileStorageExceeded = 357015,
-        ErrQuotaBotInterfaceExceeded = 357016,
-        ErrQuotaAutoTranslationExceeded = 357017,
-        ErrQuotaAnnouncementExceeded = 357018,
-        ErrQuotaMessageSearchIndexExceeded = 357019,
-        ErrQuotaMessageSearchQueryExceeded = 357020,
-        ErrQuotaAutoThumbnailExceeded = 357021,
-        ErrQuotaMAUExceeded = 357022,
-        ErrQuotaPCCExceeded = 357023,
-        ErrQuotaMAUSystemLimitExceeded = 357024,
-        ErrNotSupportDefaultPlan = 357025,
-
-        // Other Errors
-        // Call (166xxx)
-        ErrCallerInActiveCall = 166000,
-        ErrCalleeInActiveCall = 166001,
-        ErrMemberNotInDirectCall = 166002,
-        ErrParticipantExistInRoom = 166003,
-        ErrParticipantIsNotModerator = 166004,
-        ErrCallEnded = 166005,
-        ErrParticipantNotInCall = 166006,
-        ErrUserDeviceNotFound = 166007,
-        ErrNotDirectCall = 166008,
-        ErrUserNotMember = 166009,
-        ErrAnActiveCallExists = 166010,
-        ErrCallNotInChannel = 166011,
-
-        // License (305xxx)
-        ErrInvalidLicenseID = 305000,
-        ErrLicenseNotFound = 305001,
-
-        // Management (516xxx)
-        ErrWebhookConfigEventsNotFound = 516000,
-        ErrWebhookConfigEventsInvalid = 516001,
-        ErrWebhookConfigExists = 516002,
-
-        // Tag (762xxx)
-        ErrTagExisted = 762000,
-        ErrTagNameRequired = 762001,
-
-        // Contact Us (183xxx)
-        ErrContactUsSubjectTooLong = 183000,
-        ErrContactUsDescriptionTooLong = 183001,
-        ErrContactUsRequiredFailed = 183002,
 
         // Push Provider (348xxx)
         ErrInvalidAPNSConfig = 348000,
