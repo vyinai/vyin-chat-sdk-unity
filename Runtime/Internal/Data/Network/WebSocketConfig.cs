@@ -50,12 +50,12 @@ namespace VyinChatSdk.Internal.Data.Network
         /// <summary>
         /// SDK version
         /// </summary>
-        public string SdkVersion { get; set; } = SdkInfo.Version;
+        public string SdkVersion { get; set; } = VcSdkInfo.Version;
 
         /// <summary>
         /// SDK module (e.g., "Chat")
         /// </summary>
-        public string SdkModule { get; set; } = SdkInfo.Module;
+        public string SdkModule { get; set; } = VcSdkInfo.Module;
 
         /// <summary>
         /// API version for error code compatibility
