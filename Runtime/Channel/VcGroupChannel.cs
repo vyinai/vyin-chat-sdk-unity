@@ -9,20 +9,63 @@ using Logger = VyinChatSdk.Internal.Domain.Log.Logger;
 
 namespace VyinChatSdk
 {
+    /// <summary>
+    /// Represents a group channel for real-time messaging
+    /// </summary>
     public class VcGroupChannel
     {
         private const string TAG = "VcGroupChannel";
 
+        /// <summary>
+        /// Unique URL identifier of the channel
+        /// </summary>
         public string ChannelUrl { get; set; }
+
+        /// <summary>
+        /// Display name of the channel
+        /// </summary>
         public string Name { get; set; }
+
+        /// <summary>
+        /// Unix timestamp (milliseconds) when the channel was created
+        /// </summary>
         public long CreatedAt { get; set; }
+
+        /// <summary>
+        /// The most recent message in the channel
+        /// </summary>
         public VcBaseMessage LastMessage { get; set; }
+
+        /// <summary>
+        /// List of users who are members of this channel
+        /// </summary>
         public List<VcUser> Members { get; set; }
+
+        /// <summary>
+        /// Total number of members in the channel
+        /// </summary>
         public int MemberCount { get; set; }
+
+        /// <summary>
+        /// Custom data associated with the channel (JSON string)
+        /// </summary>
         public string Data { get; set; }
+
+        /// <summary>
+        /// URL of the channel's cover image
+        /// </summary>
         public string CoverUrl { get; set; }
+
+        /// <summary>
+        /// Custom type for categorizing the channel
+        /// </summary>
         public string CustomType { get; set; }
 
+        /// <summary>
+        /// Sends a user message to this group channel
+        /// </summary>
+        /// <param name="createParams">Parameters for creating the message</param>
+        /// <param name="callback">Callback invoked with the sent message or error</param>
         public void SendUserMessage(
            VcUserMessageCreateParams createParams,
            VcUserMessageHandler callback)

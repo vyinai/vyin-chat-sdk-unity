@@ -1,7 +1,7 @@
 namespace VyinChatSdk
 {
     /// <summary>
-    /// Error codes for VyinChat SDK (v1 Specification)
+    /// Error codes for VyinChat SDK
     /// </summary>
     public enum VcErrorCode
     {
