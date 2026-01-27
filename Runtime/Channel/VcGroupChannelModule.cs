@@ -7,6 +7,9 @@ using Logger = VyinChatSdk.Internal.Domain.Log.Logger;
 
 namespace VyinChatSdk
 {
+    /// <summary>
+    /// Provides static methods for group channel operations such as creating and retrieving channels
+    /// </summary>
     public static class VcGroupChannelModule
     {
         private const string TAG = "VcGroupChannelModule";

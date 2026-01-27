@@ -1,10 +1,28 @@
 namespace VyinChatSdk
 {
+    /// <summary>
+    /// Represents a message in a channel
+    /// </summary>
     public class VcBaseMessage
     {
+        /// <summary>
+        /// Unique identifier of the message
+        /// </summary>
         public long MessageId { get; set; }
+
+        /// <summary>
+        /// Text content of the message
+        /// </summary>
         public string Message { get; set; }
+
+        /// <summary>
+        /// URL of the channel this message belongs to
+        /// </summary>
         public string ChannelUrl { get; set; }
+
+        /// <summary>
+        /// Unix timestamp (milliseconds) when the message was created
+        /// </summary>
         public long CreatedAt { get; set; }
 
         /// <summary>
