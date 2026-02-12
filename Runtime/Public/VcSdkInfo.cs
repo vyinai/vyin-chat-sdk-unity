@@ -6,7 +6,7 @@ namespace VyinChatSdk
     /// </summary>
     public static class VcSdkInfo
     {
-        public const string Version = "0.3.2";
+        public const string Version = "0.4.0";
         public const string Module = "Chat";
     }
 }
