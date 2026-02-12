@@ -1,0 +1,21 @@
+{
+    "name": "VyinChatSdk",
+    "rootNamespace": "VyinChatSdk",
+    "references": [
+        "Newtonsoft.Json-for-Unity",
+        "NativeWebSocket"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "internalsVisibleTo": [
+        "VyinChatSdk.Tests",
+        "VyinChatSdk.Editor.Tests"
+    ]
+}
