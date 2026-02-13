@@ -95,6 +95,7 @@ public class ChatDemoController : MonoBehaviour, IVcSessionHandler
 
     private void Start()
     {
+        Application.SetStackTraceLogType(LogType.Log, StackTraceLogType.None);
         SetupUI();
         InitializeAndConnect();
     }
