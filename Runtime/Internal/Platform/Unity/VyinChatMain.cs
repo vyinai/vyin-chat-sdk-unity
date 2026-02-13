@@ -803,8 +803,17 @@ namespace VyinChatSdk.Internal.Platform.Unity
             }
 
             // Cleanup lifecycle callbacks
+            // Clear all callback references BEFORE Destroy to prevent
+            // callbacks firing on disposed objects during deferred destruction
             if (_lifecycleCallbacks != null)
             {
+                _lifecycleCallbacks.OnPaused = null;
+                _lifecycleCallbacks.OnResumed = null;
+                _lifecycleCallbacks.OnGainedFocus = null;
+                _lifecycleCallbacks.OnLostFocus = null;
+                _lifecycleCallbacks.OnQuitting = null;
+                _lifecycleCallbacks.OnNetworkChanged = null;
+                _lifecycleCallbacks.OnUpdate = null;
                 GameObject.Destroy(_lifecycleCallbacks.gameObject);
                 _lifecycleCallbacks = null;
             }
