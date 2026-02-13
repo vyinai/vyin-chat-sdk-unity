@@ -24,8 +24,8 @@ public class ChatDemoController : MonoBehaviour, IVcSessionHandler
     [Tooltip("Environment (PROD, DEV, STG, TEST)")]
     [SerializeField] private Environment environment = Environment.PROD;
 
-    [Tooltip("Your App ID (will auto-fill based on environment if empty)")]
-    [SerializeField] private string appId = "";
+    [Tooltip("App ID (replace with your own App ID if needed)")]
+    [SerializeField] private string appId = "adb53e88-4c35-469a-a888-9e49ef1641b2";
 
     [Tooltip("User ID for testing")]
     [SerializeField] private string userId = "testuser1";
@@ -43,17 +43,16 @@ public class ChatDemoController : MonoBehaviour, IVcSessionHandler
     [Tooltip("Other users to invite to the channel (optional)")]
     [SerializeField] private List<string> inviteUserIds = new();
 
-    [Header("Debug Options")]
+    [Header("Debug")]
     [Tooltip("Enable automatic message resend on reconnection")]
     [SerializeField] private bool enableAutoResend = true;
 
-    [Tooltip("When enabled, pending and sent messages are shown as separate entries")]
-    [SerializeField] private bool showAckAsSeparateMessages;
+    [Tooltip("When enabled, shows each sending status (Pending → Succeeded/Failed) as separate entries")]
+    [SerializeField] private bool showSendingStatusTransitions;
 
     [Tooltip("When enabled, updated messages are shown as separate entries instead of replacing the original")]
     [SerializeField] private bool showUpdatesAsSeparateMessages;
 
-    [Header("Token Refresh Testing")]
     [Tooltip("New token to provide when SDK requests refresh")]
     [SerializeField] private string refreshToken = "demo-refresh-token";
 
@@ -61,7 +60,6 @@ public class ChatDemoController : MonoBehaviour, IVcSessionHandler
     [SerializeField] private bool simulateRefreshFailure;
 
 #if UNITY_EDITOR
-    [Header("Debug")]
     [Tooltip("Trigger EXPR once in Editor")]
     [SerializeField] private bool triggerExprOnce;
 #endif
@@ -289,14 +287,17 @@ public class ChatDemoController : MonoBehaviour, IVcSessionHandler
         {
             LogError($"Failed to send: {error.Message}");
             if (!string.IsNullOrEmpty(pendingId))
-                UpdateMessageDisplay(pendingId, $"[{userId}] {originalText}", $"  -> {VcSendingStatus.Failed}");
+            {
+                var failedId = showSendingStatusTransitions ? $"{pendingId}-failed" : pendingId;
+                UpdateMessageDisplay(failedId, $"[{userId}] {originalText}", $"  -> {VcSendingStatus.Failed}");
+            }
             return;
         }
 
         if (message != null)
         {
             var displayName = GetDisplayName(message);
-            if (!showAckAsSeparateMessages && !string.IsNullOrEmpty(pendingId))
+            if (!showSendingStatusTransitions && !string.IsNullOrEmpty(pendingId))
             {
                 _messageCache.Remove(pendingId);
             }
@@ -408,10 +409,6 @@ public class ChatDemoController : MonoBehaviour, IVcSessionHandler
 
     private void ShowPendingMessage(string pendingId, string text)
     {
-        if (showAckAsSeparateMessages)
-        {
-            UpdateMessageDisplay($"{pendingId}-none", $"[{userId}] {text}", $"  -> {VcSendingStatus.None}");
-        }
         UpdateMessageDisplay(pendingId, $"[{userId}] {text}", $"  -> {VcSendingStatus.Pending}");
     }
 

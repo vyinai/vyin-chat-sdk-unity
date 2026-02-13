@@ -2027,7 +2027,7 @@ MonoBehaviour:
   botId: vyin_chat_openai
   inviteUserIds: []
   enableAutoResend: 1
-  showAckAsSeparateMessages: 1
+  showSendingStatusTransitions: 1
   showUpdatesAsSeparateMessages: 0
   refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NzAzNzM1MzY0OTgsImp0aSI6InRlc3RlcjAxIiwic2lkIjoiNjA1MjUwNzExMzMyMDc2MDc1IiwiYWlkIjoiXCJhZGI1M2U4OC00YzM1LTQ2OWEtYTg4OC05ZTQ5ZWYxNjQxYjJcIiIsInVpZCI6IjU5Nzg1MTEyMTIwNTEyOTcyOCIsImRpc3BsYXlfbmFtZSI6InRlc3RlcjAxIiwiZW1haWwiOiIiLCJwaG90b191cmwgIjoiIiwib3JnX2lkIjoiNTEzMDQ4MDQ0MTQ1NDc1NTg1Iiwib3JnX3VzZXJfaWQiOiIwIn0.pv5cZZZa3MqMjYwt0-uIJhAwaOQfiIrSsZuJd4ZkL1U
   simulateRefreshFailure: 1
