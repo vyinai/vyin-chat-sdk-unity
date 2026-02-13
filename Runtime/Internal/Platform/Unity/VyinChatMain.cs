@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using Newtonsoft.Json;
@@ -28,6 +29,7 @@ namespace VyinChatSdk.Internal.Platform.Unity
         private IChannelRepository _channelRepository;
         private IMessageRepository _messageRepository;
         private IMessageAutoResender _messageAutoResender;
+        private CancellationTokenSource _resendCts;
         private LifecycleCallbacks _lifecycleCallbacks;
         private string _baseUrl;
         private VcInitParams _initParams;
@@ -210,14 +212,28 @@ namespace VyinChatSdk.Internal.Platform.Unity
         private void HandleAuthenticated(string sessionKey)
         {
             _messageAutoResender?.OnConnected();
-            ProcessPendingMessagesAsync();
+            StartPendingMessageResend();
+        }
+
+        /// <summary>
+        /// Cancel any running resend loop and start a new one.
+        /// </summary>
+        private void StartPendingMessageResend()
+        {
+            // Cancel previous resend loop
+            _resendCts?.Cancel();
+            _resendCts?.Dispose();
+            _resendCts = new CancellationTokenSource();
+
+            var token = _resendCts.Token;
+            _ = ProcessPendingMessagesAsync(token);
         }
 
         /// <summary>
         /// Process pending messages in the auto-resend queue.
         /// Called on reconnection to resend queued messages.
         /// </summary>
-        private async void ProcessPendingMessagesAsync()
+        private async Task ProcessPendingMessagesAsync(CancellationToken cancellationToken)
         {
             if (_messageAutoResender == null || !_messageAutoResender.IsEnabled)
                 return;
@@ -229,6 +245,13 @@ namespace VyinChatSdk.Internal.Platform.Unity
 
             while (_messageAutoResender.TryDequeue(out var pendingMessage))
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    _messageAutoResender.Register(pendingMessage);
+                    Logger.Info(LogCategory.Message, "[AutoResend] Resend loop cancelled");
+                    break;
+                }
+
                 if (!IsConnected())
                 {
                     // Connection lost during resend - re-register and stop
@@ -247,17 +270,22 @@ namespace VyinChatSdk.Internal.Platform.Unity
                     {
                         var delay = pendingMessage.GetBackoffDelayMs();
                         Logger.Debug(LogCategory.Message, $"[AutoResend] Waiting {delay}ms before resend");
-                        await Task.Delay(delay);
+                        await Task.Delay(delay, cancellationToken);
                     }
 
                     var message = await useCase.ResendAsync(pendingMessage);
                     pendingMessage.OnSuccess?.Invoke(message);
                     Logger.Info(LogCategory.Message, $"[AutoResend] Resent successfully: {pendingMessage.RequestId}");
                 }
+                catch (TaskCanceledException)
+                {
+                    _messageAutoResender.Register(pendingMessage);
+                    Logger.Info(LogCategory.Message, "[AutoResend] Resend loop cancelled during delay");
+                    break;
+                }
                 catch (VcException vcEx)
                 {
                     Logger.Warning(LogCategory.Message, $"[AutoResend] Resend failed: {pendingMessage.RequestId}, error: {vcEx.ErrorCode}");
-                    // SendMessageUseCase.HandleFailure already handles re-queuing if needed
                 }
                 catch (Exception ex)
                 {
@@ -646,7 +674,7 @@ namespace VyinChatSdk.Internal.Platform.Unity
             _messageAutoResender?.OnTokenRefreshed();
 
             // Trigger resend of pending messages after token refresh
-            ProcessPendingMessagesAsync();
+            StartPendingMessageResend();
         }
 
         private void HandleSessionDidHaveError(VcException error)
@@ -752,6 +780,11 @@ namespace VyinChatSdk.Internal.Platform.Unity
         /// </summary>
         public void Reset()
         {
+            // Cancel pending resend loop
+            _resendCts?.Cancel();
+            _resendCts?.Dispose();
+            _resendCts = null;
+
             // Unsubscribe from all connection manager events before disposing
             UnsubscribeFromConnectionEvents();
             UnsubscribeFromTokenRefreshEvents();
