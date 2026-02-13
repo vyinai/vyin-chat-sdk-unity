@@ -429,17 +429,38 @@ namespace VyinChatSdk.Internal.Platform.Unity
 
         private void SubscribeToConnectionEvents()
         {
-            _connectionManager.OnConnectedEvent += userId =>
-                NotifyConnectionHandlers(h => h.OnConnected?.Invoke(userId));
-            _connectionManager.OnDisconnectedEvent += userId =>
-                NotifyConnectionHandlers(h => h.OnDisconnected?.Invoke(userId));
-            _connectionManager.OnReconnectStarted += () =>
-                NotifyConnectionHandlers(h => h.OnReconnectStarted?.Invoke());
-            _connectionManager.OnReconnectSucceeded += () =>
-                NotifyConnectionHandlers(h => h.OnReconnectSucceeded?.Invoke());
-            _connectionManager.OnReconnectFailed += () =>
-                NotifyConnectionHandlers(h => h.OnReconnectFailed?.Invoke());
+            _connectionManager.OnConnectedEvent += HandleConnectionConnected;
+            _connectionManager.OnDisconnectedEvent += HandleConnectionDisconnected;
+            _connectionManager.OnReconnectStarted += HandleConnectionReconnectStarted;
+            _connectionManager.OnReconnectSucceeded += HandleConnectionReconnectSucceeded;
+            _connectionManager.OnReconnectFailed += HandleConnectionReconnectFailed;
         }
+
+        private void UnsubscribeFromConnectionEvents()
+        {
+            if (_connectionManager == null) return;
+
+            _connectionManager.OnConnectedEvent -= HandleConnectionConnected;
+            _connectionManager.OnDisconnectedEvent -= HandleConnectionDisconnected;
+            _connectionManager.OnReconnectStarted -= HandleConnectionReconnectStarted;
+            _connectionManager.OnReconnectSucceeded -= HandleConnectionReconnectSucceeded;
+            _connectionManager.OnReconnectFailed -= HandleConnectionReconnectFailed;
+        }
+
+        private void HandleConnectionConnected(string userId)
+            => NotifyConnectionHandlers(h => h.OnConnected?.Invoke(userId));
+
+        private void HandleConnectionDisconnected(string userId)
+            => NotifyConnectionHandlers(h => h.OnDisconnected?.Invoke(userId));
+
+        private void HandleConnectionReconnectStarted()
+            => NotifyConnectionHandlers(h => h.OnReconnectStarted?.Invoke());
+
+        private void HandleConnectionReconnectSucceeded()
+            => NotifyConnectionHandlers(h => h.OnReconnectSucceeded?.Invoke());
+
+        private void HandleConnectionReconnectFailed()
+            => NotifyConnectionHandlers(h => h.OnReconnectFailed?.Invoke());
 
         #endregion
 
@@ -731,7 +752,8 @@ namespace VyinChatSdk.Internal.Platform.Unity
         /// </summary>
         public void Reset()
         {
-            // Unsubscribe from token refresh events before disposing
+            // Unsubscribe from all connection manager events before disposing
+            UnsubscribeFromConnectionEvents();
             UnsubscribeFromTokenRefreshEvents();
 
             // Disconnect WebSocket if connected
