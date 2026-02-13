@@ -48,6 +48,8 @@ namespace VyinChatSdk.Internal.Data.Network
         // Reconnection management
         private bool _isIntentionalDisconnect = false;
         private bool _isReconnecting = false;
+        private bool _isDisposed = false;
+        private CancellationTokenSource _reconnectionCts;
         private readonly ReconnectionManager _reconnectionManager;
         private readonly TokenRefreshManager _tokenRefreshManager;
         private WebSocketConfig _lastConfig;
@@ -196,6 +198,7 @@ namespace VyinChatSdk.Internal.Data.Network
             _loginHandler = null;
 
             CancelAuthTimeout();
+            CancelReconnection();
 
             // Clear all pending ACKs
             ClearAllPendingAcks();
@@ -827,34 +830,55 @@ namespace VyinChatSdk.Internal.Data.Network
                 return;
             }
 
+            // Cancel any previous reconnection task
+            CancelReconnection();
+
             // Get retry delay
             float delaySeconds = _reconnectionManager.GetNextRetryDelay();
             Logger.Info(LogCategory.Connection, $"Reconnecting in {delaySeconds} seconds (attempt #{_reconnectionManager.CurrentAttempt})");
 
-            // Schedule reconnection
+            // Schedule reconnection with cancellation support
+            _reconnectionCts = new CancellationTokenSource();
+            var token = _reconnectionCts.Token;
+
             _ = Task.Run(async () =>
             {
                 try
                 {
                     if (delaySeconds > 0)
                     {
-                        await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
+                        await Task.Delay(TimeSpan.FromSeconds(delaySeconds), token);
                     }
+
+                    if (token.IsCancellationRequested || _isDisposed)
+                        return;
 
                     // Check if still disconnected
                     if (!IsConnected && !_isIntentionalDisconnect)
                     {
                         Logger.Info(LogCategory.Connection, "Executing reconnection attempt");
-
-                        // Reconnect without callback (this is auto-reconnect, not initial connect)
                         _webSocketClient.Connect(_lastConfig);
                     }
+                }
+                catch (TaskCanceledException)
+                {
+                    Logger.Debug(LogCategory.Connection, "Reconnection cancelled");
                 }
                 catch (Exception ex)
                 {
                     Logger.Error(LogCategory.Connection, "Reconnection scheduling error", ex);
                 }
-            });
+            }, token);
+        }
+
+        private void CancelReconnection()
+        {
+            if (_reconnectionCts != null)
+            {
+                _reconnectionCts.Cancel();
+                _reconnectionCts.Dispose();
+                _reconnectionCts = null;
+            }
         }
 
         /// <summary>
@@ -912,7 +936,9 @@ namespace VyinChatSdk.Internal.Data.Network
         /// </summary>
         public void Dispose()
         {
+            _isDisposed = true;
             CancelAuthTimeout();
+            CancelReconnection();
             
             // Unregister WebSocket event handlers
             if (_webSocketClient != null)
