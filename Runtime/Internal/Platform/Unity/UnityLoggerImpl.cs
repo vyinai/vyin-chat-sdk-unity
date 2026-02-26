@@ -137,7 +137,7 @@ namespace VyinChatSdk.Internal.Platform.Unity
             }
             else if (exception != null)
             {
-                formattedMessage += $" | Exception: {exception.Message}";
+                formattedMessage += $" | {exception}";
             }
 
             // Dispatch to main thread and log
